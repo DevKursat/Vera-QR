@@ -19,10 +19,23 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Validate inputs
+    if (!email || !password) {
+      toast({
+        variant: 'destructive',
+        title: 'Eksik Bilgi',
+        description: 'Lütfen e-posta ve şifre alanlarını doldurun.',
+      })
+      return
+    }
+
     setIsLoading(true)
 
     try {
       console.log('🔐 Login başlatılıyor...', { email })
+      console.log('📧 Email:', email)
+      console.log('🔑 Password length:', password.length)
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -33,10 +46,24 @@ export default function LoginPage() {
 
       if (error) {
         console.error('❌ Auth hatası:', error)
+        console.error('❌ Error code:', error.status)
+        console.error('❌ Error message:', error.message)
+        
+        let errorMessage = error.message
+        
+        // Türkçe hata mesajları
+        if (error.message.includes('Invalid login credentials')) {
+          errorMessage = 'E-posta veya şifre hatalı. Lütfen tekrar deneyin.'
+        } else if (error.message.includes('Email not confirmed')) {
+          errorMessage = 'E-posta adresiniz doğrulanmamış. Lütfen e-postanızı kontrol edin.'
+        } else if (error.message.includes('User not found')) {
+          errorMessage = 'Bu e-posta adresi ile kayıtlı kullanıcı bulunamadı.'
+        }
+        
         toast({
           variant: 'destructive',
           title: 'Giriş Başarısız',
-          description: error.message,
+          description: errorMessage,
         })
         setIsLoading(false)
         return
