@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -21,7 +21,6 @@ interface Props {
 
 export default function RestaurantHeader({ admin }: Props) {
   const router = useRouter()
-  const supabase = createClient()
 
   const handleLogout = async () => {
     await supabase.auth.signOut()

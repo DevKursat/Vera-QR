@@ -6,8 +6,8 @@ import Link from 'next/link'
 import TablesManagement from '@/components/restaurant/tables-management'
 
 export default async function TablesPage() {
-  const adminInfo = await getRestaurantAdminInfo()
   const supabase = createClient()
+  const adminInfo = await getRestaurantAdminInfo()
 
   const { data: tables } = await supabase
     .from('tables')

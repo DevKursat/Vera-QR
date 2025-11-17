@@ -165,7 +165,7 @@ export async function logWebhookDelivery(
     nextRetryAt?: Date;
   }
 ) {
-  const { error } = await supabase.from('webhook_logs').insert({
+  const { error } = await (supabase.from('webhook_logs') as any).insert({
     webhook_config_id: webhookConfigId,
     organization_id: organizationId,
     event_type: eventType,
@@ -237,7 +237,7 @@ export async function triggerWebhooks(
   };
 
   // Send webhooks in parallel
-  const deliveryPromises = configs.map(async (config) => {
+  const deliveryPromises = configs.map(async (config: any) => {
     const result = await sendWebhook(config as any, payload, 1);
 
     const payloadString = JSON.stringify(payload);
@@ -278,8 +278,8 @@ export async function triggerWebhooks(
     });
 
     // Update last_triggered_at
-    await supabase
-      .from('webhook_configs')
+    await (supabase
+      .from('webhook_configs') as any)
       .update({ last_triggered_at: timestamp })
       .eq('id', config.id);
   });
@@ -296,27 +296,27 @@ export async function retryFailedWebhooks(
   const now = new Date();
 
   // Fetch pending retries
-  const { data: logs, error } = await supabase
+  const { data: logs, error } = await (supabase
     .from('webhook_logs')
     .select('*, webhook_configs(*)')
     .eq('status', 'retrying')
     .lte('next_retry_at', now.toISOString())
     .order('next_retry_at', { ascending: true })
-    .limit(100);
+    .limit(100) as any);
 
   if (error || !logs || logs.length === 0) {
     return;
   }
 
-  for (const log of logs) {
+  for (const log of logs as any[]) {
     const config = log.webhook_configs as any;
     if (!config || !config.is_active) continue;
 
     const nextAttempt = log.attempt_number + 1;
     if (nextAttempt > config.max_retries) {
       // Max retries reached, mark as failed
-      await supabase
-        .from('webhook_logs')
+      await (supabase
+        .from('webhook_logs') as any)
         .update({
           status: 'failed',
           error_message: `Max retries (${config.max_retries}) exceeded`,
@@ -363,8 +363,8 @@ export async function retryFailedWebhooks(
 
     // Update original log if this was the final attempt
     if (status === 'failed' || status === 'success') {
-      await supabase
-        .from('webhook_logs')
+      await (supabase
+        .from('webhook_logs') as any)
         .update({ status })
         .eq('id', log.id);
     }

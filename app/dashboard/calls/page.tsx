@@ -5,8 +5,8 @@ import TableCallsManagement from '@/components/restaurant/table-calls-management
 export const dynamic = 'force-dynamic'
 
 export default async function CallsPage() {
-  const adminInfo = await getRestaurantAdminInfo()
   const supabase = createClient()
+  const adminInfo = await getRestaurantAdminInfo()
 
   const { data: calls } = await supabase
     .from('table_calls')

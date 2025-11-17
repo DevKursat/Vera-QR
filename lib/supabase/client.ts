@@ -15,6 +15,9 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   },
 })
 
+// Re-export createClient for direct use
+export { createClient } from '@supabase/supabase-js'
+
 // Helper function for authenticated requests
 export const getAuthenticatedClient = () => {
   return supabase

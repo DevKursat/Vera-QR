@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -18,7 +18,6 @@ import { Bell, LogOut, User } from 'lucide-react'
 export default function AdminHeader() {
   const [user, setUser] = useState<any>(null)
   const router = useRouter()
-  const supabase = createClient()
 
   useEffect(() => {
     const getUser = async () => {

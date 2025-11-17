@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -27,7 +27,6 @@ interface Props {
 export default function MenuItemForm({ organizationId, categories, item }: Props) {
   const router = useRouter()
   const { toast } = useToast()
-  const supabase = createClient()
 
   const [isLoading, setIsLoading] = useState(false)
   const [imageFile, setImageFile] = useState<File | null>(null)
@@ -100,16 +99,16 @@ export default function MenuItemForm({ organizationId, categories, item }: Props
 
       if (item) {
         // Update existing item
-        const { error } = await supabase
-          .from('menu_items')
+        const { error } = await (supabase
+          .from('menu_items') as any)
           .update(itemData)
           .eq('id', item.id)
 
         if (error) throw error
       } else {
         // Create new item
-        const { data: newItem, error } = await supabase
-          .from('menu_items')
+        const { data: newItem, error } = await (supabase
+          .from('menu_items') as any)
           .insert(itemData)
           .select()
           .single()
@@ -122,8 +121,8 @@ export default function MenuItemForm({ organizationId, categories, item }: Props
       if (imageFile && itemId) {
         const imageUrl = await uploadImage(itemId)
         if (imageUrl) {
-          await supabase
-            .from('menu_items')
+          await (supabase
+            .from('menu_items') as any)
             .update({ image_url: imageUrl })
             .eq('id', itemId)
         }

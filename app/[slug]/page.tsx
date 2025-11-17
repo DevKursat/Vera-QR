@@ -10,7 +10,6 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = createClient()
-  
   const { data: organization } = await supabase
     .from('organizations')
     .select('name, description')
@@ -32,7 +31,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function RestaurantPage({ params, searchParams }: Props) {
   const supabase = createClient()
-
   // Fetch organization
   const { data: organization, error: orgError } = await supabase
     .from('organizations')

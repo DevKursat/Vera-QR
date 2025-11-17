@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button'
 import MenuItemForm from '@/components/restaurant/menu-item-form'
 
 export default async function NewMenuItemPage() {
-  const adminInfo = await getRestaurantAdminInfo()
   const supabase = createClient()
+  const adminInfo = await getRestaurantAdminInfo()
 
   const { data: categories } = await supabase
     .from('menu_categories')

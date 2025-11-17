@@ -5,8 +5,8 @@ import OrdersDashboard from '@/components/restaurant/orders-dashboard'
 export const dynamic = 'force-dynamic'
 
 export default async function OrdersPage() {
-  const adminInfo = await getRestaurantAdminInfo()
   const supabase = createClient()
+  const adminInfo = await getRestaurantAdminInfo()
 
   const { data: orders } = await supabase
     .from('orders')

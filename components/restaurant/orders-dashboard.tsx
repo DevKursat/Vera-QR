@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -38,7 +38,6 @@ const STATUS_CONFIG = {
 export default function OrdersDashboard({ initialOrders, organizationId }: Props) {
   const [orders, setOrders] = useState<Order[]>(initialOrders)
   const [activeTab, setActiveTab] = useState('all')
-  const supabase = createClient()
 
   // Real-time subscriptions
   useEffect(() => {
@@ -85,8 +84,8 @@ export default function OrdersDashboard({ initialOrders, organizationId }: Props
   }, [organizationId])
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
-    const { error } = await supabase
-      .from('orders')
+    const { error } = await (supabase
+      .from('orders') as any)
       .update({ status: newStatus })
       .eq('id', orderId)
 

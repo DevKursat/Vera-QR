@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/components/ui/use-toast'
 import {
@@ -43,7 +43,6 @@ export default function AnalyticsDashboard({ organizationId, dateRange }: Props)
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
-  const supabase = createClient()
 
   useEffect(() => {
     fetchAnalytics()
@@ -56,7 +55,7 @@ export default function AnalyticsDashboard({ organizationId, dateRange }: Props)
       const to = dateRange?.to || new Date()
 
       // Fetch orders with items
-      const { data: orders, error: ordersError } = await supabase
+      const { data: orders, error: ordersError } = await (supabase
         .from('orders')
         .select(`
           id,
@@ -76,18 +75,18 @@ export default function AnalyticsDashboard({ organizationId, dateRange }: Props)
         .eq('organization_id', organizationId)
         .gte('created_at', from.toISOString())
         .lte('created_at', to.toISOString())
-        .in('status', ['preparing', 'ready', 'served'])
+        .in('status', ['preparing', 'ready', 'served']) as any)
 
       if (ordersError) throw ordersError
 
       // Process data
       const totalOrders = orders?.length || 0
-      const totalRevenue = orders?.reduce((sum, o) => sum + (o.total_amount || 0), 0) || 0
+      const totalRevenue = orders?.reduce((sum: number, o: any) => sum + (o.total_amount || 0), 0) || 0
       const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
 
       // Top items
       const itemsMap = new Map<string, { count: number; revenue: number }>()
-      orders?.forEach((order) => {
+      orders?.forEach((order: any) => {
         order.order_items?.forEach((item: any) => {
           const name = item.menu_items?.name || 'Bilinmeyen'
           const existing = itemsMap.get(name) || { count: 0, revenue: 0 }
@@ -107,7 +106,7 @@ export default function AnalyticsDashboard({ organizationId, dateRange }: Props)
       const hourlyMap = new Map<number, number>()
       for (let i = 0; i < 24; i++) hourlyMap.set(i, 0)
 
-      orders?.forEach((order) => {
+      orders?.forEach((order: any) => {
         const hour = new Date(order.created_at).getHours()
         hourlyMap.set(hour, (hourlyMap.get(hour) || 0) + 1)
       })
@@ -129,7 +128,7 @@ export default function AnalyticsDashboard({ organizationId, dateRange }: Props)
 
       last7Days.forEach((date) => dailyMap.set(date, 0))
 
-      orders?.forEach((order) => {
+      orders?.forEach((order: any) => {
         const date = order.created_at.split('T')[0]
         if (dailyMap.has(date)) {
           dailyMap.set(date, (dailyMap.get(date) || 0) + (order.total_amount || 0))
@@ -146,7 +145,7 @@ export default function AnalyticsDashboard({ organizationId, dateRange }: Props)
 
       // Category distribution
       const categoryMap = new Map<string, number>()
-      orders?.forEach((order) => {
+      orders?.forEach((order: any) => {
         order.order_items?.forEach((item: any) => {
           const categoryName = item.menu_items?.category?.name || 'Diğer'
           categoryMap.set(categoryName, (categoryMap.get(categoryName) || 0) + item.quantity)

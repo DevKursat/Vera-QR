@@ -4,7 +4,6 @@ import { Store, Users, ShoppingCart, TrendingUp } from 'lucide-react'
 
 export default async function AdminDashboard() {
   const supabase = createClient()
-
   // Fetch statistics
   const [
     { count: organizationsCount },

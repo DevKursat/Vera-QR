@@ -7,8 +7,8 @@ import Link from 'next/link'
 import MenuCategoriesList from '@/components/restaurant/menu-categories-list'
 
 export default async function MenuPage() {
-  const adminInfo = await getRestaurantAdminInfo()
   const supabase = createClient()
+  const adminInfo = await getRestaurantAdminInfo()
 
   const [
     { data: categories },

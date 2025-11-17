@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ShoppingCart, DollarSign, Users, TrendingUp, UtensilsCrossed } from 'lucide-react'
 
 export default async function RestaurantDashboard() {
-  const adminInfo = await getRestaurantAdminInfo()
   const supabase = createClient()
+  const adminInfo = await getRestaurantAdminInfo()
 
   // Fetch today's statistics
   const today = new Date()

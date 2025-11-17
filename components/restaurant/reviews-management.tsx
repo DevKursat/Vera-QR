@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -33,7 +33,6 @@ export default function ReviewsManagement({ organizationId }: Props) {
   const [responseText, setResponseText] = useState('')
   const [isResponding, setIsResponding] = useState(false)
   const { toast } = useToast()
-  const supabase = createClient()
 
   useEffect(() => {
     fetchReviews()
@@ -94,8 +93,8 @@ export default function ReviewsManagement({ organizationId }: Props) {
 
     setIsResponding(true)
     try {
-      const { error } = await supabase
-        .from('reviews')
+      const { error } = await (supabase
+        .from('reviews') as any)
         .update({
           admin_response: responseText,
           responded_at: new Date().toISOString(),
@@ -203,7 +202,7 @@ export default function ReviewsManagement({ organizationId }: Props) {
             <CardTitle className="text-3xl">{avgRating}</CardTitle>
           </CardHeader>
           <CardContent>
-            {renderStars(Math.round(parseFloat(avgRating)))}
+            {renderStars(Math.round(parseFloat(avgRating as string)))}
           </CardContent>
         </Card>
 

@@ -7,7 +7,6 @@ import OrganizationsList from '@/components/admin/organizations-list'
 
 export default async function OrganizationsPage() {
   const supabase = createClient()
-
   const { data: organizations, error } = await supabase
     .from('organizations')
     .select('*')

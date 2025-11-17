@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { QrCode, Brain, Utensils, TrendingUp, Shield, Zap } from 'lucide-react'
+import { QrCode, Brain, Utensils, TrendingUp, Shield, Zap, Bot } from 'lucide-react'
 
 export default function HomePage() {
   return (

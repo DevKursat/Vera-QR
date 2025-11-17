@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -47,7 +47,6 @@ export default function CouponManagement({ organizationId }: Props) {
     valid_until: '',
   })
   const { toast } = useToast()
-  const supabase = createClient()
 
   useEffect(() => {
     fetchCoupons()
@@ -97,7 +96,7 @@ export default function CouponManagement({ organizationId }: Props) {
     }
 
     try {
-      const { error } = await supabase.from('coupons').insert({
+      const { error } = await (supabase.from('coupons') as any).insert({
         organization_id: organizationId,
         code: formData.code.toUpperCase(),
         description: formData.description,
@@ -144,8 +143,8 @@ export default function CouponManagement({ organizationId }: Props) {
 
   const handleToggleActive = async (couponId: string, currentState: boolean) => {
     try {
-      const { error } = await supabase
-        .from('coupons')
+      const { error } = await (supabase
+        .from('coupons') as any)
         .update({ is_active: !currentState })
         .eq('id', couponId)
 

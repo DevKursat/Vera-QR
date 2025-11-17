@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -47,7 +47,6 @@ export default function LoyaltyManagement({ organizationId }: Props) {
   const [pointsToAdd, setPointsToAdd] = useState('')
   const [description, setDescription] = useState('')
   const { toast } = useToast()
-  const supabase = createClient()
 
   useEffect(() => {
     fetchData()
@@ -66,7 +65,7 @@ export default function LoyaltyManagement({ organizationId }: Props) {
       setCustomers(customersData || [])
 
       // Fetch recent transactions
-      const { data: transactionsData, error: transactionsError } = await supabase
+      const { data: transactionsData, error: transactionsError } = await (supabase
         .from('loyalty_transactions')
         .select(`
           id,
@@ -79,12 +78,12 @@ export default function LoyaltyManagement({ organizationId }: Props) {
         `)
         .eq('loyalty_points.organization_id', organizationId)
         .order('created_at', { ascending: false })
-        .limit(50)
+        .limit(50) as any)
 
       if (transactionsError) throw transactionsError
       
       // Transform data
-      const formatted = transactionsData?.map(t => ({
+      const formatted = transactionsData?.map((t: any) => ({
         ...t,
         customer: {
           customer_name: (t.loyalty_points as any).customer_name
@@ -118,19 +117,19 @@ export default function LoyaltyManagement({ organizationId }: Props) {
       const points = parseInt(pointsToAdd)
       
       // Update customer points
-      const { error: updateError } = await supabase
-        .from('loyalty_points')
+      const { error: updateError } = await (supabase
+        .from('loyalty_points') as any)
         .update({
-          total_points: supabase.rpc('increment', { x: points }),
-          lifetime_points: supabase.rpc('increment', { x: points }),
+          total_points: (supabase as any).rpc('increment', { x: points }),
+          lifetime_points: (supabase as any).rpc('increment', { x: points }),
         })
         .eq('id', selectedCustomer)
 
       if (updateError) throw updateError
 
       // Add transaction
-      const { error: transactionError } = await supabase
-        .from('loyalty_transactions')
+      const { error: transactionError } = await (supabase
+        .from('loyalty_transactions') as any)
         .insert({
           loyalty_point_id: selectedCustomer,
           points,

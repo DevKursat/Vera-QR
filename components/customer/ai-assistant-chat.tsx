@@ -171,7 +171,7 @@ export default function AIAssistantChat({ organization, sessionId, onClose, onAd
               </Button>
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Örnek: "Vejetaryen seçenekleriniz neler?", "En popüler pizzanız hangisi?"
+              Örnek: &quot;Vejetaryen seçenekleriniz neler?&quot;, &quot;En popüler pizzanız hangisi?&quot;
             </p>
           </div>
         </Card>

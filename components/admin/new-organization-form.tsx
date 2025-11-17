@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -29,7 +29,6 @@ const PERSONALITY_OPTIONS = [
 export default function NewOrganizationForm() {
   const router = useRouter()
   const { toast } = useToast()
-  const supabase = createClient()
 
   const [isLoading, setIsLoading] = useState(false)
   const [logoFile, setLogoFile] = useState<File | null>(null)
@@ -121,7 +120,7 @@ export default function NewOrganizationForm() {
       }
 
       // Create organization
-      const { data: organization, error: orgError } = await supabase
+      const { data: organization, error: orgError } = await (supabase
         .from('organizations')
         .insert({
           name: formData.name,
@@ -131,26 +130,26 @@ export default function NewOrganizationForm() {
           brand_color: formData.brand_color,
           working_hours: formData.working_hours,
           status: 'active',
-        })
+        } as any)
         .select()
-        .single()
+        .single() as any)
 
       if (orgError) throw orgError
 
       // Upload logo if provided
       if (logoFile && organization) {
-        const logoUrl = await uploadLogo(organization.id)
+        const logoUrl = await uploadLogo((organization as any).id)
         if (logoUrl) {
-          await supabase
-            .from('organizations')
+          await (supabase
+            .from('organizations') as any)
             .update({ logo_url: logoUrl })
-            .eq('id', organization.id)
+            .eq('id', (organization as any).id)
         }
       }
 
       // Create organization settings
-      await supabase.from('organization_settings').insert({
-        organization_id: organization.id,
+      await (supabase.from('organization_settings') as any).insert({
+        organization_id: (organization as any).id,
         ai_personality: formData.ai_personality,
         openai_api_key: formData.openai_api_key || null,
         ai_auto_translate: true,
@@ -160,8 +159,8 @@ export default function NewOrganizationForm() {
 
       // Create default categories
       const categoryPromises = formData.categories.map((categoryName, index) =>
-        supabase.from('menu_categories').insert({
-          organization_id: organization.id,
+        (supabase.from('menu_categories') as any).insert({
+          organization_id: (organization as any).id,
           name: categoryName,
           display_order: index,
         })
@@ -373,7 +372,7 @@ export default function NewOrganizationForm() {
               disabled={isLoading}
             />
             <p className="text-xs text-muted-foreground">
-              Her restoran kendi OpenAI API key'ini kullanabilir. 
+              Her restoran kendi OpenAI API key&apos;ini kullanabilir. 
               <a 
                 href="https://platform.openai.com/api-keys" 
                 target="_blank" 

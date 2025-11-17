@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -34,7 +34,6 @@ const CALL_TYPES = {
 export default function TableCallsManagement({ initialCalls, organizationId }: Props) {
   const [calls, setCalls] = useState<TableCall[]>(initialCalls)
   const [activeTab, setActiveTab] = useState('pending')
-  const supabase = createClient()
 
   useEffect(() => {
     const channel = supabase
@@ -76,8 +75,8 @@ export default function TableCallsManagement({ initialCalls, organizationId }: P
   }, [organizationId])
 
   const updateCallStatus = async (callId: string, newStatus: string) => {
-    const { error } = await supabase
-      .from('table_calls')
+    const { error } = await (supabase
+      .from('table_calls') as any)
       .update({ status: newStatus })
       .eq('id', callId)
 
