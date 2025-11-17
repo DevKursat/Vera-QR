@@ -144,7 +144,7 @@ CROSS JOIN LATERAL (
         ('California Roll', 'Crab, avocado, cucumber', 65.00, ARRAY['shellfish'], 2),
         ('Spicy Tuna Roll', 'Spicy tuna with cucumber', 70.00, ARRAY['fish'], 2),
         ('Salmon Sashimi', '6 pieces of fresh salmon', 85.00, ARRAY['fish'], 3),
-        ('Mixed Sashimi', 'Chef\'s selection of fresh fish', 120.00, ARRAY['fish'], 3),
+        ('Mixed Sashimi', 'Chef selection of fresh fish', 120.00, ARRAY['fish'], 3),
         ('Dragon Roll', 'Eel, cucumber, avocado', 95.00, ARRAY['fish'], 4),
         ('Rainbow Roll', 'California roll topped with mixed fish', 110.00, ARRAY['fish', 'shellfish'], 4),
         ('Sake', 'Traditional Japanese rice wine', 45.00, ARRAY[]::text[], 5),

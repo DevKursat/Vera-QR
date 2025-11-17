@@ -1,18 +1,6 @@
--- ============================================
--- VERA QR - Complete Database Schema
--- Single migration file with all tables, RLS, and features
--- Safe to run multiple times (uses IF NOT EXISTS)
--- ============================================
-
--- Enable required extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "postgis";
 
--- ============================================
--- CORE TABLES
--- ============================================
-
--- ORGANIZATIONS TABLE
 CREATE TABLE IF NOT EXISTS organizations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
@@ -30,7 +18,6 @@ CREATE TABLE IF NOT EXISTS organizations (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- MENU CATEGORIES TABLE
 CREATE TABLE IF NOT EXISTS menu_categories (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE NOT NULL,
@@ -42,7 +29,6 @@ CREATE TABLE IF NOT EXISTS menu_categories (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- MENU ITEMS TABLE
 CREATE TABLE IF NOT EXISTS menu_items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE NOT NULL,
@@ -61,7 +47,6 @@ CREATE TABLE IF NOT EXISTS menu_items (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- TABLES TABLE
 CREATE TABLE IF NOT EXISTS tables (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE NOT NULL,
@@ -74,7 +59,6 @@ CREATE TABLE IF NOT EXISTS tables (
     UNIQUE(organization_id, table_number)
 );
 
--- ORDERS TABLE
 CREATE TABLE IF NOT EXISTS orders (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE NOT NULL,
@@ -90,7 +74,6 @@ CREATE TABLE IF NOT EXISTS orders (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- AI CONVERSATION LOGS
 CREATE TABLE IF NOT EXISTS ai_conversations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE NOT NULL,
@@ -101,10 +84,9 @@ CREATE TABLE IF NOT EXISTS ai_conversations (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ADMIN USERS TABLE
 CREATE TABLE IF NOT EXISTS admin_users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    auth_user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_id UUID,
     email VARCHAR(255) UNIQUE NOT NULL,
     full_name VARCHAR(255),
     phone VARCHAR(50),
@@ -118,18 +100,9 @@ CREATE TABLE IF NOT EXISTS admin_users (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Add auth_user_id unique index if not exists
-DO $$ 
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_admin_users_auth_user_id') THEN
-        CREATE UNIQUE INDEX idx_admin_users_auth_user_id ON admin_users(auth_user_id);
-    END IF;
-END $$;
-
--- PLATFORM ADMINISTRATORS TABLE (Super Admins)
 CREATE TABLE IF NOT EXISTS platform_admins (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE NOT NULL,
+    user_id UUID,
     full_name VARCHAR(255),
     email VARCHAR(255) UNIQUE,
     avatar_url TEXT,
@@ -140,10 +113,9 @@ CREATE TABLE IF NOT EXISTS platform_admins (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- USER SESSIONS TABLE
 CREATE TABLE IF NOT EXISTS user_sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    auth_user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL,
     organization_id UUID REFERENCES organizations(id) ON DELETE SET NULL,
     session_type VARCHAR(50) NOT NULL CHECK (session_type IN ('platform_admin', 'restaurant_admin', 'staff')),
     ip_address INET,
@@ -154,52 +126,39 @@ CREATE TABLE IF NOT EXISTS user_sessions (
     is_active BOOLEAN DEFAULT true
 );
 
--- ORGANIZATION SETTINGS TABLE
 CREATE TABLE IF NOT EXISTS organization_settings (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE UNIQUE NOT NULL,
-    
-    -- AI Assistant Settings
     ai_personality VARCHAR(50) DEFAULT 'professional' CHECK (ai_personality IN ('friendly', 'professional', 'fun', 'formal', 'casual')),
     ai_language_preference VARCHAR(10) DEFAULT 'tr',
     ai_auto_translate BOOLEAN DEFAULT true,
     ai_voice_enabled BOOLEAN DEFAULT false,
     ai_vision_enabled BOOLEAN DEFAULT false,
-    openai_api_key TEXT, -- Per-restaurant OpenAI API key (optional)
-    
-    -- Feature Toggles
+    openai_api_key TEXT,
     enable_table_call BOOLEAN DEFAULT true,
     enable_loyalty_program BOOLEAN DEFAULT false,
     enable_online_payment BOOLEAN DEFAULT false,
     enable_reservations BOOLEAN DEFAULT false,
     enable_reviews BOOLEAN DEFAULT true,
     enable_stock_management BOOLEAN DEFAULT true,
-    
-    -- Notification Settings
     notification_email TEXT,
     notification_sms_phone TEXT,
     notification_order_created BOOLEAN DEFAULT true,
     notification_order_ready BOOLEAN DEFAULT true,
     notification_table_call BOOLEAN DEFAULT true,
-    
-    -- Branding
     custom_css TEXT,
     welcome_message TEXT,
     footer_text TEXT,
     social_media JSONB DEFAULT '{}',
-    
-    -- Business Settings
     tax_rate DECIMAL(5,2) DEFAULT 0,
     service_charge_rate DECIMAL(5,2) DEFAULT 0,
     minimum_order_amount DECIMAL(10,2) DEFAULT 0,
     delivery_enabled BOOLEAN DEFAULT false,
     pickup_enabled BOOLEAN DEFAULT true,
-    
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- TABLE CALLS / SERVICE REQUESTS
 CREATE TABLE IF NOT EXISTS table_calls (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE NOT NULL,
@@ -213,7 +172,6 @@ CREATE TABLE IF NOT EXISTS table_calls (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- CAMPAIGNS TABLE
 CREATE TABLE IF NOT EXISTS campaigns (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE NOT NULL,
@@ -229,7 +187,6 @@ CREATE TABLE IF NOT EXISTS campaigns (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ANALYTICS EVENTS TABLE
 CREATE TABLE IF NOT EXISTS analytics_events (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE NOT NULL,
@@ -239,11 +196,6 @@ CREATE TABLE IF NOT EXISTS analytics_events (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ============================================
--- WEBHOOK SYSTEM
--- ============================================
-
--- WEBHOOK ENDPOINTS
 CREATE TABLE IF NOT EXISTS webhook_endpoints (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE NOT NULL,
@@ -257,7 +209,6 @@ CREATE TABLE IF NOT EXISTS webhook_endpoints (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- WEBHOOK LOGS
 CREATE TABLE IF NOT EXISTS webhook_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     webhook_endpoint_id UUID REFERENCES webhook_endpoints(id) ON DELETE CASCADE NOT NULL,
@@ -272,11 +223,6 @@ CREATE TABLE IF NOT EXISTS webhook_logs (
     triggered_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ============================================
--- LOYALTY & REVIEWS SYSTEM
--- ============================================
-
--- CUSTOMER LOYALTY
 CREATE TABLE IF NOT EXISTS customer_loyalty (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE NOT NULL,
@@ -292,7 +238,6 @@ CREATE TABLE IF NOT EXISTS customer_loyalty (
     UNIQUE(organization_id, customer_phone)
 );
 
--- LOYALTY TRANSACTIONS
 CREATE TABLE IF NOT EXISTS loyalty_transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     customer_id UUID REFERENCES customer_loyalty(id) ON DELETE CASCADE NOT NULL,
@@ -304,7 +249,6 @@ CREATE TABLE IF NOT EXISTS loyalty_transactions (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- CUSTOMER REVIEWS
 CREATE TABLE IF NOT EXISTS reviews (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE NOT NULL,
@@ -321,7 +265,6 @@ CREATE TABLE IF NOT EXISTS reviews (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- COUPONS
 CREATE TABLE IF NOT EXISTS coupons (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE NOT NULL,
@@ -339,7 +282,6 @@ CREATE TABLE IF NOT EXISTS coupons (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- COUPON USAGE
 CREATE TABLE IF NOT EXISTS coupon_usage (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     coupon_id UUID REFERENCES coupons(id) ON DELETE CASCADE NOT NULL,
@@ -349,157 +291,38 @@ CREATE TABLE IF NOT EXISTS coupon_usage (
     used_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- ============================================
--- INDEXES (with IF NOT EXISTS protection)
--- ============================================
+CREATE INDEX IF NOT EXISTS idx_organizations_slug ON organizations(slug);
+CREATE INDEX IF NOT EXISTS idx_organizations_status ON organizations(status);
+CREATE INDEX IF NOT EXISTS idx_menu_categories_org ON menu_categories(organization_id);
+CREATE INDEX IF NOT EXISTS idx_menu_items_org ON menu_items(organization_id);
+CREATE INDEX IF NOT EXISTS idx_menu_items_category ON menu_items(category_id);
+CREATE INDEX IF NOT EXISTS idx_menu_items_available ON menu_items(available);
+CREATE INDEX IF NOT EXISTS idx_tables_org ON tables(organization_id);
+CREATE INDEX IF NOT EXISTS idx_tables_qr ON tables(qr_code);
+CREATE INDEX IF NOT EXISTS idx_orders_org ON orders(organization_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_created ON orders(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ai_conversations_org ON ai_conversations(organization_id);
+CREATE INDEX IF NOT EXISTS idx_ai_conversations_session ON ai_conversations(session_id);
+CREATE INDEX IF NOT EXISTS idx_admin_users_email ON admin_users(email);
+CREATE INDEX IF NOT EXISTS idx_admin_users_org ON admin_users(organization_id);
+CREATE INDEX IF NOT EXISTS idx_admin_users_user_id ON admin_users(user_id);
+CREATE INDEX IF NOT EXISTS idx_campaigns_org ON campaigns(organization_id);
+CREATE INDEX IF NOT EXISTS idx_campaigns_active ON campaigns(active);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_org ON analytics_events(organization_id);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_type ON analytics_events(event_type);
+CREATE INDEX IF NOT EXISTS idx_analytics_events_created ON analytics_events(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_webhook_endpoints_org ON webhook_endpoints(organization_id);
+CREATE INDEX IF NOT EXISTS idx_webhook_logs_endpoint ON webhook_logs(webhook_endpoint_id);
+CREATE INDEX IF NOT EXISTS idx_customer_loyalty_org ON customer_loyalty(organization_id);
+CREATE INDEX IF NOT EXISTS idx_customer_loyalty_phone ON customer_loyalty(customer_phone);
+CREATE INDEX IF NOT EXISTS idx_loyalty_transactions_customer ON loyalty_transactions(customer_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_org ON reviews(organization_id);
+CREATE INDEX IF NOT EXISTS idx_reviews_status ON reviews(status);
+CREATE INDEX IF NOT EXISTS idx_coupons_org ON coupons(organization_id);
+CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons(code);
+CREATE INDEX IF NOT EXISTS idx_coupon_usage_coupon ON coupon_usage(coupon_id);
 
-DO $$ 
-BEGIN
-    -- Organizations
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_organizations_slug') THEN
-        CREATE INDEX idx_organizations_slug ON organizations(slug);
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_organizations_status') THEN
-        CREATE INDEX idx_organizations_status ON organizations(status);
-    END IF;
-
-    -- Menu Categories
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_menu_categories_org') THEN
-        CREATE INDEX idx_menu_categories_org ON menu_categories(organization_id);
-    END IF;
-
-    -- Menu Items
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_menu_items_org') THEN
-        CREATE INDEX idx_menu_items_org ON menu_items(organization_id);
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_menu_items_category') THEN
-        CREATE INDEX idx_menu_items_category ON menu_items(category_id);
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_menu_items_available') THEN
-        CREATE INDEX idx_menu_items_available ON menu_items(available);
-    END IF;
-
-    -- Tables
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_tables_org') THEN
-        CREATE INDEX idx_tables_org ON tables(organization_id);
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_tables_qr') THEN
-        CREATE INDEX idx_tables_qr ON tables(qr_code);
-    END IF;
-
-    -- Orders
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_orders_org') THEN
-        CREATE INDEX idx_orders_org ON orders(organization_id);
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_orders_status') THEN
-        CREATE INDEX idx_orders_status ON orders(status);
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_orders_created') THEN
-        CREATE INDEX idx_orders_created ON orders(created_at DESC);
-    END IF;
-
-    -- AI Conversations
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_ai_conversations_org') THEN
-        CREATE INDEX idx_ai_conversations_org ON ai_conversations(organization_id);
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_ai_conversations_session') THEN
-        CREATE INDEX idx_ai_conversations_session ON ai_conversations(session_id);
-    END IF;
-
-    -- Admin Users
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_admin_users_email') THEN
-        CREATE INDEX idx_admin_users_email ON admin_users(email);
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_admin_users_org') THEN
-        CREATE INDEX idx_admin_users_org ON admin_users(organization_id);
-    END IF;
-
-    -- Campaigns
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_campaigns_org') THEN
-        CREATE INDEX idx_campaigns_org ON campaigns(organization_id);
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_campaigns_active') THEN
-        CREATE INDEX idx_campaigns_active ON campaigns(active);
-    END IF;
-
-    -- Analytics
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_analytics_events_org') THEN
-        CREATE INDEX idx_analytics_events_org ON analytics_events(organization_id);
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_analytics_events_type') THEN
-        CREATE INDEX idx_analytics_events_type ON analytics_events(event_type);
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_analytics_events_created') THEN
-        CREATE INDEX idx_analytics_events_created ON analytics_events(created_at DESC);
-    END IF;
-
-    -- Webhooks
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_webhook_endpoints_org') THEN
-        CREATE INDEX idx_webhook_endpoints_org ON webhook_endpoints(organization_id);
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_webhook_logs_endpoint') THEN
-        CREATE INDEX idx_webhook_logs_endpoint ON webhook_logs(webhook_endpoint_id);
-    END IF;
-
-    -- Loyalty
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_customer_loyalty_org') THEN
-        CREATE INDEX idx_customer_loyalty_org ON customer_loyalty(organization_id);
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_customer_loyalty_phone') THEN
-        CREATE INDEX idx_customer_loyalty_phone ON customer_loyalty(customer_phone);
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_loyalty_transactions_customer') THEN
-        CREATE INDEX idx_loyalty_transactions_customer ON loyalty_transactions(customer_id);
-    END IF;
-
-    -- Reviews
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_reviews_org') THEN
-        CREATE INDEX idx_reviews_org ON reviews(organization_id);
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_reviews_status') THEN
-        CREATE INDEX idx_reviews_status ON reviews(status);
-    END IF;
-
-    -- Coupons
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_coupons_org') THEN
-        CREATE INDEX idx_coupons_org ON coupons(organization_id);
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_coupons_code') THEN
-        CREATE INDEX idx_coupons_code ON coupons(code);
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_coupon_usage_coupon') THEN
-        CREATE INDEX idx_coupon_usage_coupon ON coupon_usage(coupon_id);
-    END IF;
-
-    -- Organization Settings
-    IF NOT EXISTS (SELECT 1 FROM pg_indexes WHERE indexname = 'idx_org_settings_has_openai_key') THEN
-        CREATE INDEX idx_org_settings_has_openai_key ON organization_settings(organization_id) 
-        WHERE openai_api_key IS NOT NULL;
-    END IF;
-END $$;
-
--- ============================================
--- ROW LEVEL SECURITY (RLS) POLICIES
--- ============================================
-
--- Enable RLS on all tables
 ALTER TABLE organizations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE menu_categories ENABLE ROW LEVEL SECURITY;
 ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
@@ -521,300 +344,62 @@ ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 ALTER TABLE coupons ENABLE ROW LEVEL SECURITY;
 ALTER TABLE coupon_usage ENABLE ROW LEVEL SECURITY;
 
--- Drop existing policies if they exist (to avoid conflicts)
-DO $$ 
-DECLARE
-    r RECORD;
-BEGIN
-    FOR r IN (
-        SELECT schemaname, tablename, policyname
-        FROM pg_policies
-        WHERE schemaname = 'public'
-    ) LOOP
-        EXECUTE format('DROP POLICY IF EXISTS %I ON %I.%I', r.policyname, r.schemaname, r.tablename);
-    END LOOP;
-END $$;
+CREATE POLICY "Organizations viewable by everyone" ON organizations FOR SELECT USING (status = 'active');
+CREATE POLICY "Authenticated users can insert organizations" ON organizations FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "Users can update their own organization" ON organizations FOR UPDATE TO authenticated USING (id IN (SELECT organization_id FROM admin_users WHERE user_id = auth.uid()));
 
--- Organizations: Public read, authenticated write
-CREATE POLICY "Organizations are viewable by everyone"
-    ON organizations FOR SELECT
-    USING (status = 'active');
+CREATE POLICY "Menu categories viewable by everyone" ON menu_categories FOR SELECT USING (true);
+CREATE POLICY "Org admins can manage menu categories" ON menu_categories FOR ALL TO authenticated USING (organization_id IN (SELECT organization_id FROM admin_users WHERE user_id = auth.uid()));
 
-CREATE POLICY "Authenticated users can insert organizations"
-    ON organizations FOR INSERT
-    TO authenticated
-    WITH CHECK (true);
+CREATE POLICY "Menu items viewable by everyone" ON menu_items FOR SELECT USING (true);
+CREATE POLICY "Org admins can manage menu items" ON menu_items FOR ALL TO authenticated USING (organization_id IN (SELECT organization_id FROM admin_users WHERE user_id = auth.uid()));
 
-CREATE POLICY "Users can update their own organization"
-    ON organizations FOR UPDATE
-    TO authenticated
-    USING (
-        id IN (
-            SELECT organization_id FROM admin_users WHERE auth_user_id = auth.uid()
-        )
-    );
+CREATE POLICY "Tables viewable by everyone" ON tables FOR SELECT USING (true);
+CREATE POLICY "Org admins can manage tables" ON tables FOR ALL TO authenticated USING (organization_id IN (SELECT organization_id FROM admin_users WHERE user_id = auth.uid()));
 
--- Menu Categories: Public read, org admins write
-CREATE POLICY "Menu categories are viewable by everyone"
-    ON menu_categories FOR SELECT
-    USING (true);
+CREATE POLICY "Anyone can create orders" ON orders FOR INSERT WITH CHECK (true);
+CREATE POLICY "Org admins can view their orders" ON orders FOR SELECT TO authenticated USING (organization_id IN (SELECT organization_id FROM admin_users WHERE user_id = auth.uid()));
+CREATE POLICY "Org admins can update their orders" ON orders FOR UPDATE TO authenticated USING (organization_id IN (SELECT organization_id FROM admin_users WHERE user_id = auth.uid()));
 
-CREATE POLICY "Org admins can manage menu categories"
-    ON menu_categories FOR ALL
-    TO authenticated
-    USING (
-        organization_id IN (
-            SELECT organization_id FROM admin_users WHERE auth_user_id = auth.uid()
-        )
-    );
+CREATE POLICY "Anyone can create AI conversations" ON ai_conversations FOR INSERT WITH CHECK (true);
+CREATE POLICY "Org admins can view their AI conversations" ON ai_conversations FOR SELECT TO authenticated USING (organization_id IN (SELECT organization_id FROM admin_users WHERE user_id = auth.uid()));
 
--- Menu Items: Public read, org admins write
-CREATE POLICY "Menu items are viewable by everyone"
-    ON menu_items FOR SELECT
-    USING (true);
+CREATE POLICY "Users can view their own admin profile" ON admin_users FOR SELECT TO authenticated USING (user_id = auth.uid());
+CREATE POLICY "Users can update their own admin profile" ON admin_users FOR UPDATE TO authenticated USING (user_id = auth.uid());
+CREATE POLICY "Users can insert their admin profile" ON admin_users FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
 
-CREATE POLICY "Org admins can manage menu items"
-    ON menu_items FOR ALL
-    TO authenticated
-    USING (
-        organization_id IN (
-            SELECT organization_id FROM admin_users WHERE auth_user_id = auth.uid()
-        )
-    );
+CREATE POLICY "Platform admins can view themselves" ON platform_admins FOR SELECT TO authenticated USING (user_id = auth.uid());
+CREATE POLICY "Platform admins can update themselves" ON platform_admins FOR UPDATE TO authenticated USING (user_id = auth.uid());
+CREATE POLICY "Platform admins can insert themselves" ON platform_admins FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
 
--- Tables: Public read, org admins write
-CREATE POLICY "Tables are viewable by everyone"
-    ON tables FOR SELECT
-    USING (true);
+CREATE POLICY "Org admins can view their settings" ON organization_settings FOR SELECT TO authenticated USING (organization_id IN (SELECT organization_id FROM admin_users WHERE user_id = auth.uid()));
+CREATE POLICY "Org admins can manage their settings" ON organization_settings FOR ALL TO authenticated USING (organization_id IN (SELECT organization_id FROM admin_users WHERE user_id = auth.uid()));
 
-CREATE POLICY "Org admins can manage tables"
-    ON tables FOR ALL
-    TO authenticated
-    USING (
-        organization_id IN (
-            SELECT organization_id FROM admin_users WHERE auth_user_id = auth.uid()
-        )
-    );
+CREATE POLICY "Anyone can create table calls" ON table_calls FOR INSERT WITH CHECK (true);
+CREATE POLICY "Org admins can manage table calls" ON table_calls FOR ALL TO authenticated USING (organization_id IN (SELECT organization_id FROM admin_users WHERE user_id = auth.uid()));
 
--- Orders: Public insert, org admins read/update
-CREATE POLICY "Anyone can create orders"
-    ON orders FOR INSERT
-    WITH CHECK (true);
+CREATE POLICY "Active campaigns viewable by everyone" ON campaigns FOR SELECT USING (active = true);
+CREATE POLICY "Org admins can manage campaigns" ON campaigns FOR ALL TO authenticated USING (organization_id IN (SELECT organization_id FROM admin_users WHERE user_id = auth.uid()));
 
-CREATE POLICY "Org admins can view their orders"
-    ON orders FOR SELECT
-    TO authenticated
-    USING (
-        organization_id IN (
-            SELECT organization_id FROM admin_users WHERE auth_user_id = auth.uid()
-        )
-    );
+CREATE POLICY "Org admins can view their analytics" ON analytics_events FOR SELECT TO authenticated USING (organization_id IN (SELECT organization_id FROM admin_users WHERE user_id = auth.uid()));
+CREATE POLICY "Anyone can insert analytics events" ON analytics_events FOR INSERT WITH CHECK (true);
 
-CREATE POLICY "Org admins can update their orders"
-    ON orders FOR UPDATE
-    TO authenticated
-    USING (
-        organization_id IN (
-            SELECT organization_id FROM admin_users WHERE auth_user_id = auth.uid()
-        )
-    );
+CREATE POLICY "Org admins can manage webhooks" ON webhook_endpoints FOR ALL TO authenticated USING (organization_id IN (SELECT organization_id FROM admin_users WHERE user_id = auth.uid()));
+CREATE POLICY "Org admins can view webhook logs" ON webhook_logs FOR SELECT TO authenticated USING (organization_id IN (SELECT organization_id FROM admin_users WHERE user_id = auth.uid()));
 
--- AI Conversations: Public insert, org admins read
-CREATE POLICY "Anyone can create AI conversations"
-    ON ai_conversations FOR INSERT
-    WITH CHECK (true);
+CREATE POLICY "Org admins can manage loyalty" ON customer_loyalty FOR ALL TO authenticated USING (organization_id IN (SELECT organization_id FROM admin_users WHERE user_id = auth.uid()));
+CREATE POLICY "Org admins can view loyalty transactions" ON loyalty_transactions FOR SELECT TO authenticated USING (organization_id IN (SELECT organization_id FROM admin_users WHERE user_id = auth.uid()));
+CREATE POLICY "Org admins can create loyalty transactions" ON loyalty_transactions FOR INSERT TO authenticated WITH CHECK (organization_id IN (SELECT organization_id FROM admin_users WHERE user_id = auth.uid()));
 
-CREATE POLICY "Org admins can view their AI conversations"
-    ON ai_conversations FOR SELECT
-    TO authenticated
-    USING (
-        organization_id IN (
-            SELECT organization_id FROM admin_users WHERE auth_user_id = auth.uid()
-        )
-    );
+CREATE POLICY "Anyone can submit reviews" ON reviews FOR INSERT WITH CHECK (true);
+CREATE POLICY "Approved reviews viewable by everyone" ON reviews FOR SELECT USING (status = 'approved');
+CREATE POLICY "Org admins can manage reviews" ON reviews FOR ALL TO authenticated USING (organization_id IN (SELECT organization_id FROM admin_users WHERE user_id = auth.uid()));
 
--- Admin Users: Self-management
-CREATE POLICY "Users can view their own admin profile"
-    ON admin_users FOR SELECT
-    TO authenticated
-    USING (auth_user_id = auth.uid());
+CREATE POLICY "Active coupons viewable by everyone" ON coupons FOR SELECT USING (is_active = true AND (valid_until IS NULL OR valid_until > NOW()));
+CREATE POLICY "Org admins can manage coupons" ON coupons FOR ALL TO authenticated USING (organization_id IN (SELECT organization_id FROM admin_users WHERE user_id = auth.uid()));
+CREATE POLICY "Anyone can use coupons" ON coupon_usage FOR INSERT WITH CHECK (true);
+CREATE POLICY "Org admins can view coupon usage" ON coupon_usage FOR SELECT TO authenticated USING (coupon_id IN (SELECT id FROM coupons WHERE organization_id IN (SELECT organization_id FROM admin_users WHERE user_id = auth.uid())));
 
-CREATE POLICY "Users can update their own admin profile"
-    ON admin_users FOR UPDATE
-    TO authenticated
-    USING (auth_user_id = auth.uid());
-
--- Platform Admins: Self-management
-CREATE POLICY "Platform admins can view themselves"
-    ON platform_admins FOR SELECT
-    TO authenticated
-    USING (user_id = auth.uid());
-
-CREATE POLICY "Platform admins can update themselves"
-    ON platform_admins FOR UPDATE
-    TO authenticated
-    USING (user_id = auth.uid());
-
--- Organization Settings: Org admins only
-CREATE POLICY "Org admins can view their settings"
-    ON organization_settings FOR SELECT
-    TO authenticated
-    USING (
-        organization_id IN (
-            SELECT organization_id FROM admin_users WHERE auth_user_id = auth.uid()
-        )
-    );
-
-CREATE POLICY "Org admins can manage their settings"
-    ON organization_settings FOR ALL
-    TO authenticated
-    USING (
-        organization_id IN (
-            SELECT organization_id FROM admin_users WHERE auth_user_id = auth.uid()
-        )
-    );
-
--- Table Calls: Public insert, org admins manage
-CREATE POLICY "Anyone can create table calls"
-    ON table_calls FOR INSERT
-    WITH CHECK (true);
-
-CREATE POLICY "Org admins can manage table calls"
-    ON table_calls FOR ALL
-    TO authenticated
-    USING (
-        organization_id IN (
-            SELECT organization_id FROM admin_users WHERE auth_user_id = auth.uid()
-        )
-    );
-
--- Campaigns: Public read active, org admins manage
-CREATE POLICY "Active campaigns are viewable by everyone"
-    ON campaigns FOR SELECT
-    USING (active = true);
-
-CREATE POLICY "Org admins can manage campaigns"
-    ON campaigns FOR ALL
-    TO authenticated
-    USING (
-        organization_id IN (
-            SELECT organization_id FROM admin_users WHERE auth_user_id = auth.uid()
-        )
-    );
-
--- Analytics Events: Org admins only
-CREATE POLICY "Org admins can view their analytics"
-    ON analytics_events FOR SELECT
-    TO authenticated
-    USING (
-        organization_id IN (
-            SELECT organization_id FROM admin_users WHERE auth_user_id = auth.uid()
-        )
-    );
-
-CREATE POLICY "Anyone can insert analytics events"
-    ON analytics_events FOR INSERT
-    WITH CHECK (true);
-
--- Webhooks: Org admins only
-CREATE POLICY "Org admins can manage webhooks"
-    ON webhook_endpoints FOR ALL
-    TO authenticated
-    USING (
-        organization_id IN (
-            SELECT organization_id FROM admin_users WHERE auth_user_id = auth.uid()
-        )
-    );
-
-CREATE POLICY "Org admins can view webhook logs"
-    ON webhook_logs FOR SELECT
-    TO authenticated
-    USING (
-        organization_id IN (
-            SELECT organization_id FROM admin_users WHERE auth_user_id = auth.uid()
-        )
-    );
-
--- Customer Loyalty: Public read own, org admins manage
-CREATE POLICY "Org admins can manage loyalty"
-    ON customer_loyalty FOR ALL
-    TO authenticated
-    USING (
-        organization_id IN (
-            SELECT organization_id FROM admin_users WHERE auth_user_id = auth.uid()
-        )
-    );
-
-CREATE POLICY "Org admins can view loyalty transactions"
-    ON loyalty_transactions FOR SELECT
-    TO authenticated
-    USING (
-        organization_id IN (
-            SELECT organization_id FROM admin_users WHERE auth_user_id = auth.uid()
-        )
-    );
-
-CREATE POLICY "Org admins can create loyalty transactions"
-    ON loyalty_transactions FOR INSERT
-    TO authenticated
-    WITH CHECK (
-        organization_id IN (
-            SELECT organization_id FROM admin_users WHERE auth_user_id = auth.uid()
-        )
-    );
-
--- Reviews: Public insert, org admins manage
-CREATE POLICY "Anyone can submit reviews"
-    ON reviews FOR INSERT
-    WITH CHECK (true);
-
-CREATE POLICY "Approved reviews are viewable by everyone"
-    ON reviews FOR SELECT
-    USING (status = 'approved');
-
-CREATE POLICY "Org admins can manage reviews"
-    ON reviews FOR ALL
-    TO authenticated
-    USING (
-        organization_id IN (
-            SELECT organization_id FROM admin_users WHERE auth_user_id = auth.uid()
-        )
-    );
-
--- Coupons: Public read active, org admins manage
-CREATE POLICY "Active coupons are viewable by everyone"
-    ON coupons FOR SELECT
-    USING (is_active = true AND (valid_until IS NULL OR valid_until > NOW()));
-
-CREATE POLICY "Org admins can manage coupons"
-    ON coupons FOR ALL
-    TO authenticated
-    USING (
-        organization_id IN (
-            SELECT organization_id FROM admin_users WHERE auth_user_id = auth.uid()
-        )
-    );
-
-CREATE POLICY "Anyone can use coupons"
-    ON coupon_usage FOR INSERT
-    WITH CHECK (true);
-
-CREATE POLICY "Org admins can view coupon usage"
-    ON coupon_usage FOR SELECT
-    TO authenticated
-    USING (
-        coupon_id IN (
-            SELECT id FROM coupons WHERE organization_id IN (
-                SELECT organization_id FROM admin_users WHERE auth_user_id = auth.uid()
-            )
-        )
-    );
-
--- ============================================
--- FUNCTIONS & TRIGGERS
--- ============================================
-
--- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -823,55 +408,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Add triggers for updated_at (only if not exists)
-DO $$ 
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_organizations_updated_at') THEN
-        CREATE TRIGGER update_organizations_updated_at BEFORE UPDATE ON organizations
-            FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_menu_categories_updated_at') THEN
-        CREATE TRIGGER update_menu_categories_updated_at BEFORE UPDATE ON menu_categories
-            FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_menu_items_updated_at') THEN
-        CREATE TRIGGER update_menu_items_updated_at BEFORE UPDATE ON menu_items
-            FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_orders_updated_at') THEN
-        CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders
-            FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-    END IF;
-    
-    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_admin_users_updated_at') THEN
-        CREATE TRIGGER update_admin_users_updated_at BEFORE UPDATE ON admin_users
-            FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-    END IF;
-END $$;
-
--- ============================================
--- COMMENTS FOR DOCUMENTATION
--- ============================================
-
-COMMENT ON TABLE organizations IS 'Restaurant organizations/businesses';
-COMMENT ON TABLE menu_categories IS 'Menu categories for organizing items';
-COMMENT ON TABLE menu_items IS 'Individual menu items with pricing and details';
-COMMENT ON TABLE tables IS 'Physical tables with QR codes';
-COMMENT ON TABLE orders IS 'Customer orders placed via QR menu';
-COMMENT ON TABLE ai_conversations IS 'AI assistant conversation logs';
-COMMENT ON TABLE admin_users IS 'Restaurant admin users';
-COMMENT ON TABLE platform_admins IS 'Platform super administrators';
-COMMENT ON TABLE organization_settings IS 'Per-organization configuration and feature toggles';
-COMMENT ON TABLE customer_loyalty IS 'Customer loyalty program members';
-COMMENT ON TABLE reviews IS 'Customer reviews and ratings';
-COMMENT ON TABLE coupons IS 'Discount coupons and promotional codes';
-COMMENT ON COLUMN organization_settings.openai_api_key IS 'Optional: Organization-specific OpenAI API key. If not set, falls back to platform default.';
-
--- ============================================
--- COMPLETED!
--- ============================================
--- All tables, indexes, RLS policies, and functions created successfully.
--- Safe to run multiple times - uses IF NOT EXISTS checks.
+CREATE TRIGGER update_organizations_updated_at BEFORE UPDATE ON organizations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_menu_categories_updated_at BEFORE UPDATE ON menu_categories FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_menu_items_updated_at BEFORE UPDATE ON menu_items FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_admin_users_updated_at BEFORE UPDATE ON admin_users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
