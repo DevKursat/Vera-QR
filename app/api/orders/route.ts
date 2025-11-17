@@ -4,6 +4,8 @@ import { validateOrder } from '@/lib/validators'
 import { generateOrderNumber } from '@/lib/utils'
 import { triggerWebhooks } from '@/lib/webhook'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()

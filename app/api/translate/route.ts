@@ -14,7 +14,8 @@ try {
   // Ignore initialization errors during build
 }
 
-export const runtime = 'edge'
+// Use Node.js runtime for OpenAI SDK
+export const runtime = 'nodejs'
 
 const SUPPORTED_LANGUAGES = {
   en: 'English',

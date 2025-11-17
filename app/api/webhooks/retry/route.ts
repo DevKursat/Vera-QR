@@ -3,6 +3,8 @@ import { createClient } from '@supabase/supabase-js'
 import { retryFailedWebhooks } from '@/lib/webhook'
 import { Database } from '@/lib/supabase/types'
 
+export const dynamic = 'force-dynamic'
+
 // This endpoint should be called by a cron job (e.g., Vercel Cron or GitHub Actions)
 // GET /api/webhooks/retry
 export async function GET(request: NextRequest) {

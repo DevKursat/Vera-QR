@@ -3,7 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { sendChatMessage, generateSystemPrompt, type ChatMessage, type MenuContext } from '@/lib/openai'
 import { validateAIChatMessage } from '@/lib/validators'
 
-export const runtime = 'edge'
+// Use Node.js runtime for OpenAI SDK
+export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
   try {
