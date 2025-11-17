@@ -11,15 +11,18 @@
 
 2. **Run Database Migrations**
    - Open SQL Editor in Supabase Dashboard
-   - Copy and execute `supabase/migrations/20240101000000_initial_schema.sql`
-   - Copy and execute `supabase/migrations/20240101000001_rls_policies.sql`
+   - Copy and execute **`supabase/migrations/00_complete_schema.sql`**
+   - That's it! Single file contains everything (safe to run multiple times)
+   - ✅ All tables, indexes, RLS policies, and triggers will be created
    - (Optional) Execute `supabase/seed.sql` for demo data
 
 3. **Configure Storage**
    - Create two buckets:
-     - `logos` (for restaurant logos)
-     - `menu-images` (for menu item photos)
+     - `organizations` (for restaurant logos) - **Public bucket** ✅
+     - `menu-items` (for menu item photos) - **Public bucket** ✅
    - Set both to public access for reading
+   - File size limit: 5 MB
+   - Allowed types: image/png, image/jpeg, image/jpg, image/svg+xml
 
 4. **Get Service Role Key**
    - Go to Settings → API
