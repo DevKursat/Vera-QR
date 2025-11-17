@@ -134,7 +134,6 @@ OPENAI_API_KEY=sk-...
 # App Config (ZORUNLU)
 NEXT_PUBLIC_APP_URL=https://vera-qr.vercel.app
 PLATFORM_ADMIN_EMAIL=admin@yourcompany.com
-CRON_SECRET=random_secret_min_32_chars_here
 
 # Google Maps (OPSİYONEL)
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIza...
@@ -146,6 +145,15 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIza...
 
 - Build başlar (3-5 dakika)
 - ✅ Deploy başarılı: `https://vera-qr.vercel.app`
+
+### 5. GitHub Actions Health Check (OPSİYONEL)
+
+1. GitHub Repository → **Settings** → **Secrets and variables** → **Actions**
+2. **New repository secret** tıkla:
+   - **Name**: `APP_URL`
+   - **Value**: `https://vera-qr.vercel.app` (Vercel URL'in)
+3. ✅ Her 5 dakikada otomatik health check çalışır
+4. **Actions** tab'ında durumu görebilirsin
 
 ---
 

@@ -126,6 +126,63 @@ vercel --prod
 3. **Enable SSL**
    - Automatic via Vercel (Let's Encrypt)
 
+## GitHub Actions Setup (Health Checks)
+
+### Configure Repository Secrets
+
+1. **Go to Repository Settings**
+   - Navigate to: Settings → Secrets and variables → Actions
+   - Click "New repository secret"
+
+2. **Add APP_URL Secret**
+   ```
+   Name: APP_URL
+   Value: https://your-vercel-domain.vercel.app
+   ```
+   (Or your custom domain like `https://veraqr.com`)
+
+3. **Verify Workflow**
+   - Workflow file: `.github/workflows/cron.yml`
+   - Runs every 5 minutes automatically
+   - Tests `/api/health` endpoint
+   - Verifies Supabase connection
+
+4. **Manual Test**
+   ```bash
+   # In your repository page
+   Actions → Health Check Cron → Run workflow
+   ```
+
+### Health Check Features
+
+The health check endpoint (`/api/health`) provides:
+- ✅ Supabase connection status
+- ✅ Database statistics (organizations, orders count)
+- ✅ System timestamp
+- ✅ Environment info
+
+**Response Example:**
+```json
+{
+  "status": "healthy",
+  "message": "VERA-QR system operational",
+  "timestamp": "2025-11-17T10:30:00.000Z",
+  "database": {
+    "connected": true,
+    "organizations": 12,
+    "orders": 487
+  },
+  "environment": "production"
+}
+```
+
+### Monitoring & Alerts
+
+- Check GitHub Actions tab for health check history
+- Workflow fails if health check returns non-200 status
+- Add custom notifications (Slack, Discord, Email) in workflow file
+- View logs for debugging connection issues
+
 ## Post-Deployment
 
 ### 1. Create Platform Admin Account

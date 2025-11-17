@@ -199,8 +199,12 @@ SUPABASE_SERVICE_ROLE_KEY=eyJ...
 OPENAI_API_KEY=sk-...
 NEXT_PUBLIC_APP_URL=https://your-domain.com
 PLATFORM_ADMIN_EMAIL=admin@yourcompany.com
-CRON_SECRET=random_secret_32_chars
 ```
+
+**GitHub Actions (Health Check):**
+- Add `APP_URL` secret in repository settings
+- Health checks run every 5 minutes automatically
+- Verifies Supabase connection & system status
 
 See [QUICKSTART.md](QUICKSTART.md) for step-by-step guide.
 
