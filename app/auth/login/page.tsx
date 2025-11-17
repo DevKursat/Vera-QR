@@ -75,12 +75,8 @@ export default function LoginPage() {
         title: 'Giriş Başarılı',
         description: 'Platform admin paneline yönlendiriliyorsunuz...',
       })
-      // Refresh to update server components with new session
-      router.refresh()
-      // Small delay to let session propagate
-      setTimeout(() => {
-        router.push('/admin/dashboard')
-      }, 100)
+      // Direct navigation - don't set loading false, let redirect happen
+      window.location.href = '/admin/dashboard'
       return
     }      // Check restaurant admin
       console.log('🔍 Restaurant admin kontrol ediliyor...')
@@ -102,8 +98,8 @@ export default function LoginPage() {
           title: 'Giriş Başarılı',
           description: 'Restoran admin paneline yönlendiriliyorsunuz...',
         })
-        // Don't set loading to false, keep loading state during redirect
-        router.push('/dashboard')
+        // Direct navigation for restaurant admin
+        window.location.href = '/dashboard'
         return
       }
 
