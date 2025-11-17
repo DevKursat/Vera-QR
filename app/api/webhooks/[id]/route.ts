@@ -16,16 +16,12 @@ export async function GET(
       .from('webhook_configs')
       .select('*')
       .eq('id', id)
-      .single()
+      .maybeSingle()
 
-    if (error) {
-      throw error
-    }
-
-    if (!webhook) {
+    if (error || !webhook) {
       return NextResponse.json(
-        { error: 'Webhook not found' },
-        { status: 404 }
+        { error: error?.message || 'Webhook not found' },
+        { status: error ? 500 : 404 }
       )
     }
 
@@ -100,16 +96,12 @@ export async function PATCH(
       .update(updateData)
       .eq('id', id)
       .select()
-      .single()
+      .maybeSingle()
 
-    if (error) {
-      throw error
-    }
-
-    if (!webhook) {
+    if (error || !webhook) {
       return NextResponse.json(
-        { error: 'Webhook not found' },
-        { status: 404 }
+        { error: error?.message || 'Webhook not found' },
+        { status: error ? 500 : 404 }
       )
     }
 

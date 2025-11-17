@@ -26,16 +26,12 @@ export async function PATCH(
       .update({ status, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select()
-      .single()
+      .maybeSingle()
 
-    if (error) {
-      throw error
-    }
-
-    if (!order) {
+    if (error || !order) {
       return NextResponse.json(
-        { error: 'Order not found' },
-        { status: 404 }
+        { error: error?.message || 'Order not found' },
+        { status: error ? 500 : 404 }
       )
     }
 
@@ -104,16 +100,12 @@ export async function GET(
       .from('orders')
       .select('*, table:tables(table_number, location_description), organization:organizations(name, logo_url)')
       .eq('id', id)
-      .single()
+      .maybeSingle()
 
-    if (error) {
-      throw error
-    }
-
-    if (!order) {
+    if (error || !order) {
       return NextResponse.json(
-        { error: 'Order not found' },
-        { status: 404 }
+        { error: error?.message || 'Order not found' },
+        { status: error ? 500 : 404 }
       )
     }
 

@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .select('name, description')
     .eq('slug', params.slug)
     .eq('status', 'active')
-    .single()
+    .maybeSingle()
 
   if (!organization) {
     return {
@@ -37,7 +37,7 @@ export default async function RestaurantPage({ params, searchParams }: Props) {
     .select('*')
     .eq('slug', params.slug)
     .eq('status', 'active')
-    .single()
+    .maybeSingle()
 
   if (orgError || !organization) {
     notFound()
@@ -76,7 +76,7 @@ export default async function RestaurantPage({ params, searchParams }: Props) {
       .select('*')
       .eq('id', searchParams.table)
       .eq('qr_code', searchParams.qr)
-      .single()
+      .maybeSingle()
 
     tableInfo = table
   }

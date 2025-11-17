@@ -96,10 +96,13 @@ export async function POST(request: NextRequest) {
         retry_enabled: true,
       })
       .select()
-      .single()
+      .maybeSingle()
 
-    if (error) {
-      throw error
+    if (error || !webhook) {
+      return NextResponse.json(
+        { error: error?.message || 'Failed to create webhook' },
+        { status: error ? 500 : 400 }
+      )
     }
 
     return NextResponse.json(

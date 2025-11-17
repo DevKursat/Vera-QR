@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       .from('organizations')
       .select('name')
       .eq('id', organizationId)
-      .single()
+      .maybeSingle()
 
     if (!organization) {
       return NextResponse.json(

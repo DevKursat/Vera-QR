@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
       .select('*')
       .eq('id', organization_id)
       .eq('status', 'active')
-      .single()
+      .maybeSingle()
 
     if (orgError || !organization) {
       return NextResponse.json(
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       .from('organization_settings')
       .select('ai_personality, openai_api_key')
       .eq('organization_id', organization_id)
-      .single()
+      .maybeSingle()
 
     const aiPersonality = settings?.ai_personality || 'friendly'
     const customApiKey = settings?.openai_api_key || undefined

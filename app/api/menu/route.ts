@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
       .select('*')
       .eq('slug', slug)
       .eq('status', 'active')
-      .single()
+      .maybeSingle()
 
     if (orgError || !organization) {
       return NextResponse.json(

@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       .from('organizations')
       .select('name, settings')
       .eq('id', organization_id)
-      .single()
+      .maybeSingle()
 
     if (!organization) {
       return NextResponse.json(

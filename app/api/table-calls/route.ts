@@ -29,9 +29,14 @@ export async function POST(request: NextRequest) {
         status: 'pending',
       })
       .select('*, table:tables(table_number, location_description)')
-      .single()
+      .maybeSingle()
 
-    if (error) throw error
+    if (error || !call) {
+      return NextResponse.json(
+        { error: error?.message || 'Failed to create table call' },
+        { status: error ? 500 : 400 }
+      )
+    }
 
     // Track analytics
     await supabase.from('analytics_events').insert({

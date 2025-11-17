@@ -22,12 +22,12 @@ export async function POST(request: NextRequest) {
       .from('webhook_configs')
       .select('*')
       .eq('id', webhook_config_id)
-      .single()
+      .maybeSingle()
 
     if (error || !config) {
       return NextResponse.json(
-        { error: 'Webhook config not found' },
-        { status: 404 }
+        { error: error?.message || 'Webhook config not found' },
+        { status: error ? 500 : 404 }
       )
     }
 

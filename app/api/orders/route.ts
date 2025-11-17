@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
         .from('tables')
         .select('organization_id')
         .eq('id', table_id)
-        .single()
+        .maybeSingle()
 
       if (tableError || !table) {
         return NextResponse.json(
@@ -70,10 +70,10 @@ export async function POST(request: NextRequest) {
         session_id: sessionId,
       })
       .select()
-      .single()
+      .maybeSingle()
 
-    if (orderError) {
-      throw orderError
+    if (orderError || !order) {
+      throw orderError || new Error('Failed to create order')
     }
 
     // Update table status if table exists

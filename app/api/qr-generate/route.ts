@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       .from('tables')
       .select('*, organization:organizations(slug, name, brand_color)')
       .eq('id', table_id)
-      .single()
+      .maybeSingle()
 
     if (tableError || !table) {
       return NextResponse.json(
