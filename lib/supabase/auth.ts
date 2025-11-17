@@ -79,14 +79,21 @@ export async function getCurrentUser() {
 // Check if user is platform admin
 export async function isPlatformAdmin() {
   const user = await getCurrentUser()
-  if (!user) return false
+  console.log('🔍 isPlatformAdmin - Current user:', user?.id, user?.email)
+  
+  if (!user) {
+    console.log('❌ isPlatformAdmin - No user found')
+    return false
+  }
   
   const supabase = createClient()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('platform_admins')
     .select('id, is_super_admin')
     .eq('user_id', user.id)
     .maybeSingle()
+  
+  console.log('🔍 isPlatformAdmin - Query result:', { data, error })
   
   return !!data
 }

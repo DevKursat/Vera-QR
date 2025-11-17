@@ -2,10 +2,18 @@ import OpenAI from 'openai'
 import type { MenuItem, Organization } from '@/lib/supabase/types'
 
 // Helper to get OpenAI client with custom or default API key
-export function getOpenAIClient(customApiKey?: string): OpenAI {
-  return new OpenAI({
-    apiKey: customApiKey || process.env.OPENAI_API_KEY,
-  })
+export function getOpenAIClient(customApiKey?: string): OpenAI | null {
+  const apiKey = customApiKey || process.env.OPENAI_API_KEY
+  if (!apiKey) {
+    return null
+  }
+  try {
+    return new OpenAI({
+      apiKey,
+    })
+  } catch {
+    return null
+  }
 }
 
 export interface ChatMessage {
@@ -107,6 +115,10 @@ export async function sendChatMessage(
 ): Promise<string> {
   try {
     const openai = getOpenAIClient(customApiKey)
+    if (!openai) {
+      return 'OpenAI servisi şu anda kullanılamıyor.'
+    }
+    
     const systemPrompt = generateSystemPrompt(context)
     
     const response = await openai.chat.completions.create({
@@ -133,6 +145,10 @@ export async function generateMenuRecommendations(
 ): Promise<string[]> {
   try {
     const openai = getOpenAIClient(customApiKey)
+    if (!openai) {
+      return []
+    }
+    
     const systemPrompt = `Sen bir restoran menü uzmanısın. Aşağıdaki menüden müşteri tercihlerine göre 3-5 öneri yap.
 
 Menü:
@@ -169,6 +185,10 @@ export async function analyzeCustomerQuery(
 }> {
   try {
     const openai = getOpenAIClient(customApiKey)
+    if (!openai) {
+      return { intent: 'other', entities: [] }
+    }
+    
     const response = await openai.chat.completions.create({
       model: 'gpt-4-turbo-preview',
       messages: [

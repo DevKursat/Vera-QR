@@ -75,10 +75,8 @@ export default function LoginPage() {
           title: 'Giriş Başarılı',
           description: 'Platform admin paneline yönlendiriliyorsunuz...',
         })
-        setTimeout(() => {
-          router.push('/admin/dashboard')
-          router.refresh()
-        }, 1000)
+        // Don't set loading to false, keep loading state during redirect
+        router.push('/admin/dashboard')
         return
       }
 
@@ -102,10 +100,8 @@ export default function LoginPage() {
           title: 'Giriş Başarılı',
           description: 'Restoran admin paneline yönlendiriliyorsunuz...',
         })
-        setTimeout(() => {
-          router.push('/dashboard')
-          router.refresh()
-        }, 1000)
+        // Don't set loading to false, keep loading state during redirect
+        router.push('/dashboard')
         return
       }
 

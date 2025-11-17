@@ -11,9 +11,14 @@ export default async function AdminLayout({
 }) {
   const isAdmin = await isPlatformAdmin()
   
+  console.log('🔐 Admin Layout - isPlatformAdmin:', isAdmin)
+  
   if (!isAdmin) {
+    console.log('❌ Admin değil, login\'e yönlendiriliyor')
     redirect('/auth/login')
   }
+
+  console.log('✅ Admin doğrulandı, layout render ediliyor')
 
   return (
     <div className="min-h-screen bg-slate-50">
