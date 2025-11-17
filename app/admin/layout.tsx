@@ -9,16 +9,17 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
+  console.log('🔐 Admin Layout - Render başladı')
   const isAdmin = await isPlatformAdmin()
   
-  console.log('🔐 Admin Layout - isPlatformAdmin:', isAdmin)
+  console.log('🔐 Admin Layout - isPlatformAdmin sonucu:', isAdmin)
   
   if (!isAdmin) {
-    console.log('❌ Admin değil, login\'e yönlendiriliyor')
+    console.log('❌ Admin Layout - Admin değil, login\'e yönlendiriliyor')
     redirect('/auth/login')
   }
 
-  console.log('✅ Admin doğrulandı, layout render ediliyor')
+  console.log('✅ Admin Layout - Admin doğrulandı, layout render ediliyor')
 
   return (
     <div className="min-h-screen bg-slate-50">
