@@ -71,12 +71,15 @@ export default function LoginPage() {
 
     if (platformAdmin) {
       console.log('✅ Platform admin bulundu! Dashboard\'a yönlendiriliyor...')
+      console.log('📍 Redirect URL:', window.location.origin + '/admin/dashboard')
       toast({
         title: 'Giriş Başarılı',
         description: 'Platform admin paneline yönlendiriliyorsunuz...',
       })
-      // Direct navigation - don't set loading false, let redirect happen
+      // Direct navigation - middleware will handle the redirect
+      console.log('🚀 window.location.href çağrılıyor...')
       window.location.href = '/admin/dashboard'
+      console.log('✅ Redirect komutu verildi')
       return
     }      // Check restaurant admin
       console.log('🔍 Restaurant admin kontrol ediliyor...')

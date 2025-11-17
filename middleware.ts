@@ -67,8 +67,32 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
-  // Don't redirect from /auth/login - let the page handle it client-side
-  // Only redirect if trying to access /auth while already authenticated
+  // If user is authenticated and on /auth/login, redirect to their dashboard
+  // This handles the case when window.location.href redirects to dashboard
+  if (isAuthRoute && user && request.nextUrl.pathname === '/auth/login') {
+    // Check if platform admin or restaurant admin
+    const { data: platformAdmin } = await supabase
+      .from('platform_admins')
+      .select('id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (platformAdmin) {
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+    }
+
+    const { data: restaurantAdmin } = await supabase
+      .from('admin_users')
+      .select('id, organization_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (restaurantAdmin) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+  }
+
+  // For other /auth routes (like /auth/signup), only redirect if already authenticated
   if (isAuthRoute && user && !request.nextUrl.pathname.startsWith('/auth/login')) {
     // Check if platform admin or restaurant admin
     const { data: platformAdmin } = await supabase
