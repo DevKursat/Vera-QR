@@ -51,6 +51,7 @@ export default function NewOrganizationForm() {
       sunday: { open: '10:00', close: '21:00', closed: false },
     },
     ai_personality: 'professional',
+    openai_api_key: '',
     categories: ['Yemek', 'İçecek', 'Tatlı'],
   })
 
@@ -151,6 +152,7 @@ export default function NewOrganizationForm() {
       await supabase.from('organization_settings').insert({
         organization_id: organization.id,
         ai_personality: formData.ai_personality,
+        openai_api_key: formData.openai_api_key || null,
         ai_auto_translate: true,
         enable_table_call: true,
         enable_reviews: true,
@@ -335,7 +337,7 @@ export default function NewOrganizationForm() {
             Müşterilerle konuşacak AI asistanın kişiliğini seçin
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {PERSONALITY_OPTIONS.map((option) => (
               <button
@@ -353,6 +355,34 @@ export default function NewOrganizationForm() {
                 <div className="text-sm text-slate-600 mt-1">{option.description}</div>
               </button>
             ))}
+          </div>
+
+          <div className="space-y-2 pt-4 border-t">
+            <Label htmlFor="openai_api_key">
+              OpenAI API Key (Opsiyonel)
+              <span className="text-xs text-muted-foreground ml-2">
+                Boş bırakırsanız platform varsayılanı kullanılır
+              </span>
+            </Label>
+            <Input
+              id="openai_api_key"
+              type="password"
+              value={formData.openai_api_key || ''}
+              onChange={(e) => setFormData({ ...formData, openai_api_key: e.target.value })}
+              placeholder="sk-..."
+              disabled={isLoading}
+            />
+            <p className="text-xs text-muted-foreground">
+              Her restoran kendi OpenAI API key'ini kullanabilir. 
+              <a 
+                href="https://platform.openai.com/api-keys" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline ml-1"
+              >
+                API key almak için tıklayın
+              </a>
+            </p>
           </div>
         </CardContent>
       </Card>

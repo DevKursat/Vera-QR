@@ -30,14 +30,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Fetch organization settings for AI personality
+    // Fetch organization settings for AI personality and OpenAI API key
     const { data: settings } = await supabase
       .from('organization_settings')
-      .select('ai_personality')
+      .select('ai_personality, openai_api_key')
       .eq('organization_id', organization_id)
       .single()
 
     const aiPersonality = settings?.ai_personality || 'friendly'
+    const customApiKey = settings?.openai_api_key || undefined
 
     // Fetch menu items
     const { data: menuItems, error: itemsError } = await supabase
@@ -87,8 +88,8 @@ export async function POST(request: NextRequest) {
       aiPersonality,
     }
 
-    // Get AI response
-    const aiResponse = await sendChatMessage(messages, context)
+    // Get AI response (using organization's API key if available, otherwise platform default)
+    const aiResponse = await sendChatMessage(messages, context, customApiKey)
 
     // Update messages with AI response
     const updatedMessages: ChatMessage[] = [
