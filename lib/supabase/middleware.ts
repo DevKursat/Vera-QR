@@ -73,8 +73,8 @@ export async function updateSession(request: NextRequest) {
     const { data: platformAdmin } = await supabase
       .from('platform_admins')
       .select('id')
-      .eq('auth_user_id', user.id)
-      .single()
+      .eq('user_id', user.id)
+      .maybeSingle()
 
     if (platformAdmin) {
       return NextResponse.redirect(new URL('/admin/dashboard', request.url))
@@ -83,8 +83,8 @@ export async function updateSession(request: NextRequest) {
     const { data: restaurantAdmin } = await supabase
       .from('admin_users')
       .select('id, organization_id')
-      .eq('auth_user_id', user.id)
-      .single()
+      .eq('user_id', user.id)
+      .maybeSingle()
 
     if (restaurantAdmin) {
       return NextResponse.redirect(new URL('/dashboard', request.url))

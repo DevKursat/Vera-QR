@@ -73,7 +73,7 @@ export async function middleware(request: NextRequest) {
     const { data: platformAdmin } = await supabase
       .from('platform_admins')
       .select('id')
-      .eq('auth_user_id', user.id)
+      .eq('user_id', user.id)
       .maybeSingle()
 
     if (platformAdmin) {
@@ -83,7 +83,7 @@ export async function middleware(request: NextRequest) {
     const { data: restaurantAdmin } = await supabase
       .from('admin_users')
       .select('id, organization_id')
-      .eq('auth_user_id', user.id)
+      .eq('user_id', user.id)
       .maybeSingle()
 
     if (restaurantAdmin) {

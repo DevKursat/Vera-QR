@@ -22,69 +22,109 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
+      console.log('🔐 Login başlatılıyor...', { email })
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
+      console.log('🔐 Auth yanıtı:', { data, error })
+
       if (error) {
+        console.error('❌ Auth hatası:', error)
         toast({
           variant: 'destructive',
           title: 'Giriş Başarısız',
           description: error.message,
         })
+        setIsLoading(false)
         return
       }
 
-      if (data.user) {
-        // Check user role and redirect accordingly
-        const { data: platformAdmin, error: platformError } = await supabase
-          .from('platform_admins')
-          .select('id')
-          .eq('auth_user_id', data.user.id)
-          .maybeSingle()
-
-        if (platformAdmin) {
-          toast({
-            title: 'Giriş Başarılı',
-            description: 'Platform admin paneline yönlendiriliyorsunuz...',
-          })
-          router.push('/admin/dashboard')
-          router.refresh()
-          return
-        }
-
-        const { data: restaurantAdmin, error: restaurantError } = await supabase
-          .from('admin_users')
-          .select('id, organization_id')
-          .eq('auth_user_id', data.user.id)
-          .maybeSingle()
-
-        if (restaurantAdmin) {
-          toast({
-            title: 'Giriş Başarılı',
-            description: 'Restoran admin paneline yönlendiriliyorsunuz...',
-          })
-          router.push('/dashboard')
-          router.refresh()
-          return
-        }
-
-        // If no admin role found, sign out
+      if (!data.user) {
+        console.error('❌ Kullanıcı bulunamadı')
         toast({
           variant: 'destructive',
-          title: 'Yetkisiz Erişim',
-          description: 'Bu hesapla giriş yapamazsınız. Lütfen admin hesabınızla giriş yapın.',
+          title: 'Hata',
+          description: 'Kullanıcı bilgileri alınamadı',
         })
-        await supabase.auth.signOut()
+        setIsLoading(false)
+        return
       }
+
+      console.log('✅ Kullanıcı giriş yaptı:', data.user.id, data.user.email)
+
+      // Check platform admin
+      console.log('🔍 Platform admin kontrol ediliyor...')
+      const { data: platformAdmin, error: platformError } = await supabase
+        .from('platform_admins')
+        .select('*')
+        .eq('user_id', data.user.id)
+        .maybeSingle()
+
+      console.log('🔍 Platform admin sonucu:', { platformAdmin, platformError })
+
+      if (platformError) {
+        console.error('❌ Platform admin sorgu hatası:', platformError)
+      }
+
+      if (platformAdmin) {
+        console.log('✅ Platform admin bulundu! Dashboard\'a yönlendiriliyor...')
+        toast({
+          title: 'Giriş Başarılı',
+          description: 'Platform admin paneline yönlendiriliyorsunuz...',
+        })
+        setTimeout(() => {
+          router.push('/admin/dashboard')
+          router.refresh()
+        }, 1000)
+        return
+      }
+
+      // Check restaurant admin
+      console.log('🔍 Restaurant admin kontrol ediliyor...')
+      const { data: restaurantAdmin, error: restaurantError } = await supabase
+        .from('admin_users')
+        .select('id, organization_id')
+        .eq('user_id', data.user.id)
+        .maybeSingle()
+
+      console.log('🔍 Restaurant admin sonucu:', { restaurantAdmin, restaurantError })
+
+      if (restaurantError) {
+        console.error('❌ Restaurant admin sorgu hatası:', restaurantError)
+      }
+
+      if (restaurantAdmin) {
+        console.log('✅ Restaurant admin bulundu! Dashboard\'a yönlendiriliyor...')
+        toast({
+          title: 'Giriş Başarılı',
+          description: 'Restoran admin paneline yönlendiriliyorsunuz...',
+        })
+        setTimeout(() => {
+          router.push('/dashboard')
+          router.refresh()
+        }, 1000)
+        return
+      }
+
+      // No admin role found
+      console.error('❌ Hiçbir admin rolü bulunamadı!')
+      toast({
+        variant: 'destructive',
+        title: 'Yetkisiz Erişim',
+        description: 'Bu hesapla giriş yapamazsınız. Lütfen admin hesabınızla giriş yapın.',
+      })
+      await supabase.auth.signOut()
+      setIsLoading(false)
     } catch (error: any) {
+      console.error('❌ Beklenmeyen hata:', error)
       toast({
         variant: 'destructive',
         title: 'Hata',
         description: error.message || 'Bir hata oluştu',
       })
-    } finally {
       setIsLoading(false)
     }
   }

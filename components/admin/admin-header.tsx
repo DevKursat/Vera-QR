@@ -26,7 +26,7 @@ export default function AdminHeader() {
         const { data: admin } = await supabase
           .from('platform_admins')
           .select('*')
-          .eq('auth_user_id', user.id)
+          .eq('user_id', user.id)
           .maybeSingle()
         setUser(admin)
       }

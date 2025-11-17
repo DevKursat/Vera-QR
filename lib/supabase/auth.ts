@@ -85,8 +85,8 @@ export async function isPlatformAdmin() {
   const { data } = await supabase
     .from('platform_admins')
     .select('id, is_super_admin')
-    .eq('auth_user_id', user.id)
-    .single()
+    .eq('user_id', user.id)
+    .maybeSingle()
   
   return !!data
 }
@@ -100,8 +100,8 @@ export async function isSuperAdmin() {
   const { data } = await supabase
     .from('platform_admins')
     .select('is_super_admin')
-    .eq('auth_user_id', user.id)
-    .single()
+    .eq('user_id', user.id)
+    .maybeSingle()
   
   return data?.is_super_admin === true
 }
@@ -115,8 +115,8 @@ export async function getRestaurantAdminInfo() {
   const { data } = await supabase
     .from('admin_users')
     .select('*, organization:organizations(*)')
-    .eq('auth_user_id', user.id)
-    .single()
+    .eq('user_id', user.id)
+    .maybeSingle()
   
   return data
 }
@@ -134,9 +134,9 @@ export async function hasOrganizationAccess(organizationId: string) {
   const { data } = await supabase
     .from('admin_users')
     .select('id')
-    .eq('auth_user_id', user.id)
+    .eq('user_id', user.id)
     .eq('organization_id', organizationId)
-    .single()
+    .maybeSingle()
   
   return !!data
 }
@@ -150,9 +150,9 @@ export async function getUserRole(organizationId: string): Promise<'owner' | 'ad
   const { data } = await supabase
     .from('admin_users')
     .select('role')
-    .eq('auth_user_id', user.id)
+    .eq('user_id', user.id)
     .eq('organization_id', organizationId)
-    .single()
+    .maybeSingle()
   
   return data?.role as any || null
 }
