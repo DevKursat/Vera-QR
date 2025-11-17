@@ -1,0 +1,131 @@
+'use client'
+
+import { useState } from 'react'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { cn } from '@/lib/utils'
+import {
+  LayoutDashboard,
+  UtensilsCrossed,
+  ShoppingCart,
+  QrCode,
+  Users,
+  MessageSquare,
+  Settings,
+  Bell,
+  BarChart3,
+  Menu,
+  X,
+  Gift,
+  Ticket,
+  Star,
+} from 'lucide-react'
+
+const navigation = [
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Menü', href: '/dashboard/menu', icon: UtensilsCrossed },
+  { name: 'Siparişler', href: '/dashboard/orders', icon: ShoppingCart },
+  { name: 'Masalar & QR', href: '/dashboard/tables', icon: QrCode },
+  { name: 'Çağrı İstekleri', href: '/dashboard/calls', icon: Bell },
+  { name: 'Yorumlar', href: '/dashboard/reviews', icon: Star },
+  { name: 'Sadakat Programı', href: '/dashboard/loyalty', icon: Gift },
+  { name: 'Kuponlar', href: '/dashboard/coupons', icon: Ticket },
+  { name: 'Müşteriler', href: '/dashboard/customers', icon: Users },
+  { name: 'Analitik', href: '/dashboard/analytics', icon: BarChart3 },
+  { name: 'Ayarlar', href: '/dashboard/settings', icon: Settings },
+]
+
+interface Props {
+  organization: any
+}
+
+export default function RestaurantSidebar({ organization }: Props) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const pathname = usePathname()
+
+  return (
+    <>
+      {/* Mobile menu button */}
+      <div className="lg:hidden fixed top-4 left-4 z-50">
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="p-2 rounded-lg bg-white shadow-md"
+        >
+          {isMobileMenuOpen ? (
+            <X className="h-6 w-6" />
+          ) : (
+            <Menu className="h-6 w-6" />
+          )}
+        </button>
+      </div>
+
+      {/* Sidebar */}
+      <div
+        className={cn(
+          'fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform transition-transform duration-200 ease-in-out',
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        )}
+      >
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="flex items-center gap-3 h-16 px-6 border-b border-slate-200">
+            {organization?.logo_url ? (
+              <img
+                src={organization.logo_url}
+                alt={organization.name}
+                className="w-10 h-10 rounded-lg object-cover"
+              />
+            ) : (
+              <div
+                className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
+                style={{ backgroundColor: organization?.brand_color || '#3B82F6' }}
+              >
+                {organization?.name?.charAt(0) || 'R'}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-sm font-bold truncate">{organization?.name}</h1>
+              <p className="text-xs text-slate-500 truncate">Restoran Paneli</p>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+            {navigation.map((item) => {
+              const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={cn(
+                    'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
+                    isActive
+                      ? 'text-white'
+                      : 'text-slate-700 hover:bg-slate-100'
+                  )}
+                  style={
+                    isActive
+                      ? { backgroundColor: organization?.brand_color || '#3B82F6' }
+                      : {}
+                  }
+                >
+                  <item.icon className="h-5 w-5" />
+                  {item.name}
+                </Link>
+              )
+            })}
+          </nav>
+        </div>
+      </div>
+
+      {/* Mobile overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 z-30"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+    </>
+  )
+}
