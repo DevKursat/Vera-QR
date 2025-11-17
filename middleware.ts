@@ -74,7 +74,7 @@ export async function middleware(request: NextRequest) {
       .from('platform_admins')
       .select('id')
       .eq('auth_user_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (platformAdmin) {
       return NextResponse.redirect(new URL('/admin/dashboard', request.url))
@@ -84,7 +84,7 @@ export async function middleware(request: NextRequest) {
       .from('admin_users')
       .select('id, organization_id')
       .eq('auth_user_id', user.id)
-      .single()
+      .maybeSingle()
 
     if (restaurantAdmin) {
       return NextResponse.redirect(new URL('/dashboard', request.url))

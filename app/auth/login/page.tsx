@@ -38,34 +38,43 @@ export default function LoginPage() {
 
       if (data.user) {
         // Check user role and redirect accordingly
-        const { data: platformAdmin } = await supabase
+        const { data: platformAdmin, error: platformError } = await supabase
           .from('platform_admins')
           .select('id')
           .eq('auth_user_id', data.user.id)
-          .single()
+          .maybeSingle()
 
         if (platformAdmin) {
+          toast({
+            title: 'Giriş Başarılı',
+            description: 'Platform admin paneline yönlendiriliyorsunuz...',
+          })
           router.push('/admin/dashboard')
           router.refresh()
           return
         }
 
-        const { data: restaurantAdmin } = await supabase
+        const { data: restaurantAdmin, error: restaurantError } = await supabase
           .from('admin_users')
           .select('id, organization_id')
           .eq('auth_user_id', data.user.id)
-          .single()
+          .maybeSingle()
 
         if (restaurantAdmin) {
+          toast({
+            title: 'Giriş Başarılı',
+            description: 'Restoran admin paneline yönlendiriliyorsunuz...',
+          })
           router.push('/dashboard')
           router.refresh()
           return
         }
 
+        // If no admin role found, sign out
         toast({
           variant: 'destructive',
           title: 'Yetkisiz Erişim',
-          description: 'Bu hesapla giriş yapamazsınız.',
+          description: 'Bu hesapla giriş yapamazsınız. Lütfen admin hesabınızla giriş yapın.',
         })
         await supabase.auth.signOut()
       }

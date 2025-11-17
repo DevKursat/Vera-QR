@@ -27,7 +27,7 @@ export default function AdminHeader() {
           .from('platform_admins')
           .select('*')
           .eq('auth_user_id', user.id)
-          .single()
+          .maybeSingle()
         setUser(admin)
       }
     }
