@@ -1,4 +1,4 @@
-# 🍽️ VERA QR - AI-Powered Restaurant Management Platform
+# 🍽️ VERAQR - AI-Powered Restaurant Management Platform
 
 <div align="center">
 
@@ -152,11 +152,11 @@ Open [http://localhost:3000](http://localhost:3000) 🎉
 
 ---
 
-## 📁 Project Structure
+## 📂 Project Structure
 
 ```
-vera-qr/
-├── app/                          # Next.js App Router
+veraqr/
+├── app/                          # Next.js 14 App Router
 │   ├── [slug]/                   # Customer menu pages (dynamic)
 │   ├── admin/                    # Platform admin panel
 │   ├── dashboard/                # Restaurant admin panel

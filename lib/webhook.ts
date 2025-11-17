@@ -83,7 +83,7 @@ export async function sendWebhook(
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    'User-Agent': 'Vera-QR-Webhook/1.0',
+    'User-Agent': 'VERAQR-Webhook/1.0',
     'X-Webhook-Event': payload.event,
     'X-Webhook-Signature': signature,
     'X-Webhook-Timestamp': payload.timestamp,

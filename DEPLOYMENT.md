@@ -1,4 +1,4 @@
-# VERA-QR Deployment Guide
+# VERAQR Deployment Guide
 
 ## Pre-Deployment Checklist
 
@@ -165,7 +165,7 @@ The health check endpoint (`/api/health`) provides:
 ```json
 {
   "status": "healthy",
-  "message": "VERA-QR system operational",
+  "message": "VERAQR system operational",
   "timestamp": "2025-11-17T10:30:00.000Z",
   "database": {
     "connected": true,
@@ -376,4 +376,4 @@ vercel rollback DEPLOYMENT_URL
 
 ---
 
-🎉 **Congratulations!** Your VERA-QR platform is now deployed and ready to serve restaurants!
+🎉 **Congratulations!** Your VERAQR platform is now deployed and ready to serve restaurants!

@@ -8,13 +8,13 @@ on:
 
 jobs:
   health-check:
-    name: Check VERA-QR Health
+    name: Check VERAQR Health
     runs-on: ubuntu-latest
     
     steps:
       - name: Call Health Endpoint
         run: |
-          echo "🏥 Checking VERA-QR health..."
+          echo "🏥 Checking VERAQR health..."
           
           RESPONSE=$(curl -s -w "\n%{http_code}" ${{ secrets.APP_URL }}/api/health)
           HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
@@ -35,6 +35,6 @@ jobs:
       - name: Notify on Failure
         if: failure()
         run: |
-          echo "🚨 VERA-QR Health Check Failed!"
+          echo "🚨 VERAQR Health Check Failed!"
           echo "Timestamp: $(date -u)"
           # Add notification logic here (Slack, Discord, Email, etc.)

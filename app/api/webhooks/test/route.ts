@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       organization_id: config.organization_id,
       data: {
         test: true,
-        message: 'This is a test webhook from Vera-QR',
+        message: 'This is a test webhook from VERAQR',
       },
       metadata: {
         webhook_config_id: config.id,

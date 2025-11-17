@@ -5,7 +5,7 @@
 ### Adım 1: Supabase Projesi Oluştur
 1. [supabase.com](https://supabase.com) adresine git
 2. **"New Project"** tıkla
-3. Proje ismini gir: `vera-qr`
+3. Proje ismini gir: `veraqr`
 4. Güçlü bir database şifresi belirle (kaydet!)
 5. Region seç: **Europe West (London)**
 6. **"Create new project"** tıkla (2-3 dakika bekle)

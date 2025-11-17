@@ -6,7 +6,7 @@ import { Toaster } from '@/components/ui/toaster'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'VERA-QR | AI-Powered QR Menu System',
+  title: 'VERAQR | AI-Powered QR Menu System',
   description: 'White-label SaaS platform for restaurants with AI menu assistant',
   keywords: ['QR menu', 'restaurant', 'AI assistant', 'digital menu', 'SaaS'],
 }

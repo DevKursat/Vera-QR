@@ -52,7 +52,7 @@ export async function GET() {
 
     return NextResponse.json({
       status: 'healthy',
-      message: 'VERA-QR system operational',
+      message: 'VERAQR system operational',
       timestamp: new Date().toISOString(),
       database: {
         connected: true,

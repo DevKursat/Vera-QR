@@ -9,9 +9,9 @@ export default function HomePage() {
       {/* Header */}
       <header className="border-b bg-white/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <QrCode className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold">VERA-QR</span>
+          <div className="flex items-center gap-3">
+            <Bot className="h-8 w-8 text-primary" />
+            <span className="text-2xl font-bold">VERAQR</span>
           </div>
           <nav className="hidden md:flex items-center gap-6">
             <Link href="#features" className="text-sm hover:text-primary transition">
@@ -211,7 +211,7 @@ export default function HomePage() {
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <QrCode className="h-6 w-6" />
-                <span className="font-bold">VERA-QR</span>
+                <span className="font-bold">VERAQR</span>
               </div>
               <p className="text-sm text-muted-foreground">
                 AI destekli QR menü sistemi ile restoranınızı dijitalleştirin
@@ -242,7 +242,7 @@ export default function HomePage() {
             </div>
           </div>
           <div className="mt-8 pt-8 border-t text-center text-sm text-muted-foreground">
-            © 2024 VERA-QR. Tüm hakları saklıdır.
+            © 2024 VERAQR. Tüm hakları saklıdır.
           </div>
         </div>
       </footer>
