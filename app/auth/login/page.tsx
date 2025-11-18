@@ -96,22 +96,20 @@ export default function LoginPage() {
         console.error('❌ Platform admin sorgu hatası:', platformError)
       }
 
-    if (platformAdmin) {
-      console.log('✅ Platform admin bulundu! Dashboard\'a yönlendiriliyor...')
-      console.log('📍 Redirect URL:', window.location.origin + '/admin/dashboard')
-      toast({
-        title: 'Giriş Başarılı',
-        description: 'Platform admin paneline yönlendiriliyorsunuz...',
-      })
-      // Keep loading state true during redirect
-      // Direct navigation - middleware will handle the redirect
-      console.log('🚀 window.location.href çağrılıyor...')
-      window.location.href = '/admin/dashboard'
-      console.log('✅ Redirect komutu verildi')
-      return
-    }
+      if (platformAdmin) {
+        console.log('✅ Platform admin bulundu! Dashboard\'a yönlendiriliyor...')
+        toast({
+          title: 'Giriş Başarılı',
+          description: 'Platform admin paneline yönlendiriliyorsunuz...',
+        })
+        // Keep loading state true during redirect
+        // Use router.push for client-side navigation
+        router.push('/admin/dashboard')
+        router.refresh()
+        return
+      }
     
-    // Check restaurant admin
+      // Check restaurant admin
       console.log('🔍 Restaurant admin kontrol ediliyor...')
       const { data: restaurantAdmin, error: restaurantError } = await supabase
         .from('admin_users')
@@ -131,8 +129,9 @@ export default function LoginPage() {
           title: 'Giriş Başarılı',
           description: 'Restoran admin paneline yönlendiriliyorsunuz...',
         })
-        // Direct navigation for restaurant admin
-        window.location.href = '/dashboard'
+        // Use router.push for client-side navigation
+        router.push('/dashboard')
+        router.refresh()
         return
       }
 
