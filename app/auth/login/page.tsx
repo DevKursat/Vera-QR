@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/components/ui/use-toast'
-import { Loader2 } from 'lucide-react'
+import { Loader2, QrCode } from 'lucide-react'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -103,12 +103,15 @@ export default function LoginPage() {
         title: 'Giriş Başarılı',
         description: 'Platform admin paneline yönlendiriliyorsunuz...',
       })
+      // Keep loading state true during redirect
       // Direct navigation - middleware will handle the redirect
       console.log('🚀 window.location.href çağrılıyor...')
       window.location.href = '/admin/dashboard'
       console.log('✅ Redirect komutu verildi')
       return
-    }      // Check restaurant admin
+    }
+    
+    // Check restaurant admin
       console.log('🔍 Restaurant admin kontrol ediliyor...')
       const { data: restaurantAdmin, error: restaurantError } = await supabase
         .from('admin_users')
@@ -158,7 +161,7 @@ export default function LoginPage() {
       <CardHeader className="space-y-1">
         <div className="flex justify-center mb-4">
           <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center">
-            <span className="text-2xl font-bold text-white">VQ</span>
+            <QrCode className="h-8 w-8 text-white" />
           </div>
         </div>
         <CardTitle className="text-2xl text-center">VERA QR</CardTitle>

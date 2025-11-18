@@ -12,6 +12,7 @@ import {
   BarChart3,
   Menu,
   X,
+  QrCode,
 } from 'lucide-react'
 
 const navigation = [
@@ -53,7 +54,7 @@ export default function AdminSidebar() {
           {/* Logo */}
           <div className="flex items-center gap-2 h-16 px-6 border-b border-slate-200">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-              <span className="text-lg font-bold text-white">VQ</span>
+              <QrCode className="h-6 w-6 text-white" />
             </div>
             <div>
               <h1 className="text-lg font-bold">VERA QR</h1>

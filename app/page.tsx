@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { QrCode, Brain, Utensils, TrendingUp, Shield, Zap, Bot } from 'lucide-react'
+import { QrCode, Brain, Utensils, TrendingUp, Shield, Zap } from 'lucide-react'
 
 export default function HomePage() {
   return (
@@ -10,7 +10,7 @@ export default function HomePage() {
       <header className="border-b bg-white/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Bot className="h-8 w-8 text-primary" />
+            <QrCode className="h-8 w-8 text-primary" />
             <span className="text-2xl font-bold">VERAQR</span>
           </div>
           <nav className="hidden md:flex items-center gap-6">
@@ -20,11 +20,11 @@ export default function HomePage() {
             <Link href="#pricing" className="text-sm hover:text-primary transition">
               Fiyatlandırma
             </Link>
-            <Link href="/admin/login" className="text-sm hover:text-primary transition">
+            <Link href="/auth/login" className="text-sm hover:text-primary transition">
               Giriş Yap
             </Link>
             <Button asChild>
-              <Link href="/admin/register">Ücretsiz Dene</Link>
+              <Link href="/auth/register">Ücretsiz Dene</Link>
             </Button>
           </nav>
         </div>
@@ -41,7 +41,7 @@ export default function HomePage() {
         </p>
         <div className="flex gap-4 justify-center">
           <Button size="lg" asChild>
-            <Link href="/admin/register">Hemen Başla</Link>
+            <Link href="/auth/register">Hemen Başla</Link>
           </Button>
           <Button size="lg" variant="outline" asChild>
             <Link href="#features">Daha Fazla Bilgi</Link>
@@ -149,7 +149,7 @@ export default function HomePage() {
                 <li>✓ Email destek</li>
               </ul>
               <Button className="w-full mt-6" variant="outline" asChild>
-                <Link href="/admin/register?plan=starter">Başla</Link>
+                <Link href="/auth/register?plan=starter">Başla</Link>
               </Button>
             </CardContent>
           </Card>
@@ -173,7 +173,7 @@ export default function HomePage() {
                 <li>✓ Öncelikli destek</li>
               </ul>
               <Button className="w-full mt-6" asChild>
-                <Link href="/admin/register?plan=pro">Başla</Link>
+                <Link href="/auth/register?plan=pro">Başla</Link>
               </Button>
             </CardContent>
           </Card>
