@@ -68,23 +68,24 @@ export async function middleware(request: NextRequest) {
   }
 
   // If user is authenticated and on /auth/login, redirect to their dashboard
-  // This handles the case when window.location.href redirects to dashboard
   if (isAuthRoute && user && request.nextUrl.pathname === '/auth/login') {
-    // Check if platform admin or restaurant admin
+    // Check if platform admin
     const { data: platformAdmin } = await supabase
-      .from('platform_admins')
-      .select('id')
-      .eq('user_id', user.id)
+      .from('profiles')
+      .select('id, role')
+      .eq('id', user.id)
+      .eq('role', 'platform_admin')
       .maybeSingle()
 
     if (platformAdmin) {
       return NextResponse.redirect(new URL('/admin/dashboard', request.url))
     }
 
+    // Check if restaurant admin
     const { data: restaurantAdmin } = await supabase
-      .from('admin_users')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
+      .from('restaurant_admins')
+      .select('id, restaurant_id')
+      .eq('profile_id', user.id)
       .maybeSingle()
 
     if (restaurantAdmin) {
@@ -92,23 +93,25 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // For other /auth routes (like /auth/signup), only redirect if already authenticated
+  // For other /auth routes, only redirect if already authenticated
   if (isAuthRoute && user && !request.nextUrl.pathname.startsWith('/auth/login')) {
-    // Check if platform admin or restaurant admin
+    // Check if platform admin
     const { data: platformAdmin } = await supabase
-      .from('platform_admins')
-      .select('id')
-      .eq('user_id', user.id)
+      .from('profiles')
+      .select('id, role')
+      .eq('id', user.id)
+      .eq('role', 'platform_admin')
       .maybeSingle()
 
     if (platformAdmin) {
       return NextResponse.redirect(new URL('/admin/dashboard', request.url))
     }
 
+    // Check if restaurant admin
     const { data: restaurantAdmin } = await supabase
-      .from('admin_users')
-      .select('id, organization_id')
-      .eq('user_id', user.id)
+      .from('restaurant_admins')
+      .select('id, restaurant_id')
+      .eq('profile_id', user.id)
       .maybeSingle()
 
     if (restaurantAdmin) {

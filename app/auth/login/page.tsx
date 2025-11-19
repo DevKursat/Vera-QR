@@ -82,37 +82,48 @@ export default function LoginPage() {
 
       console.log('✅ Kullanıcı giriş yaptı:', data.user.id, data.user.email)
 
-      // Check platform admin
-      console.log('🔍 Platform admin kontrol ediliyor...')
-      const { data: platformAdmin, error: platformError } = await supabase
-        .from('platform_admins')
+      // Check user profile and role
+      console.log('🔍 Kullanıcı profili kontrol ediliyor...')
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
         .select('*')
-        .eq('user_id', data.user.id)
+        .eq('id', data.user.id)
         .maybeSingle()
 
-      console.log('🔍 Platform admin sonucu:', { platformAdmin, platformError })
+      console.log('🔍 Profil sonucu:', { profile, profileError })
 
-      if (platformError) {
-        console.error('❌ Platform admin sorgu hatası:', platformError)
+      if (profileError) {
+        console.error('❌ Profil sorgu hatası:', profileError)
       }
 
-      if (platformAdmin) {
-        console.log('✅ Platform admin bulundu! Dashboard\'a yönlendiriliyor...')
+      if (!profile) {
+        console.error('❌ Profil bulunamadı!')
+        toast({
+          variant: 'destructive',
+          title: 'Yetkisiz Erişim',
+          description: 'Bu hesapla giriş yapamazsınız. Lütfen admin hesabınızla giriş yapın.',
+        })
+        await supabase.auth.signOut()
+        setIsLoading(false)
+        return
+      }
+
+      // Check if platform admin
+      if ((profile as any).role === 'platform_admin') {
+        console.log('✅ Platform admin! Dashboard\'a yönlendiriliyor...')
         toast({
           title: 'Giriş Başarılı',
           description: 'Platform admin paneline yönlendiriliyorsunuz...',
         })
-        // Keep loading state true during redirect
         window.location.href = '/admin/dashboard'
         return
       }
-    
-      // Check restaurant admin
-      console.log('🔍 Restaurant admin kontrol ediliyor...')
+
+      // Check if restaurant admin
       const { data: restaurantAdmin, error: restaurantError } = await supabase
-        .from('admin_users')
-        .select('id, organization_id')
-        .eq('user_id', data.user.id)
+        .from('restaurant_admins')
+        .select('id, restaurant_id')
+        .eq('profile_id', data.user.id)
         .maybeSingle()
 
       console.log('🔍 Restaurant admin sonucu:', { restaurantAdmin, restaurantError })
@@ -127,7 +138,6 @@ export default function LoginPage() {
           title: 'Giriş Başarılı',
           description: 'Restoran admin paneline yönlendiriliyorsunuz...',
         })
-        // Keep loading state true during redirect
         window.location.href = '/dashboard'
         return
       }
