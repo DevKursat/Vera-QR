@@ -15,14 +15,14 @@ export default async function MenuPage() {
     { data: items },
   ] = await Promise.all([
     supabase
-      .from('menu_categories')
+      .from('categories')
       .select('*')
-      .eq('organization_id', adminInfo?.organization_id)
+      .eq('restaurant_id', adminInfo?.restaurant_id)
       .order('display_order', { ascending: true }),
     supabase
-      .from('menu_items')
+      .from('products')
       .select('*')
-      .eq('organization_id', adminInfo?.organization_id)
+      .eq('restaurant_id', adminInfo?.restaurant_id)
       .order('display_order', { ascending: true }),
   ])
 

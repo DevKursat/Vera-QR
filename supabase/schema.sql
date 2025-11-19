@@ -1,8 +1,8 @@
 -- ============================================================================
 -- VERA QR - Supabase Veritabanı Şeması
 -- ============================================================================
--- Bu script temiz bir başlangıç için tüm tabloları DROP eder ve yeniden oluşturur
--- UYARI: Bu script mevcut verileri siler!
+-- Bu script TEK SEFERDE tüm backend'i oluşturur (tablolar, bucket'lar, RLS vb.)
+-- KULLANIM: Önce cleanup.sql çalıştırın, sonra bu dosyayı çalıştırın
 -- ============================================================================
 
 -- Gerekli uzantıları etkinleştir
@@ -10,36 +10,90 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE EXTENSION IF NOT EXISTS "pg_trgm";
 
 -- ============================================================================
--- TABLOLARI KALDIR (Eski veriler silinecek)
+-- STORAGE BUCKET'LARI OLUŞTUR
 -- ============================================================================
 
-DROP TABLE IF EXISTS ai_conversations CASCADE;
-DROP TABLE IF EXISTS analytics_events CASCADE;
-DROP TABLE IF EXISTS table_calls CASCADE;
-DROP TABLE IF EXISTS webhook_logs CASCADE;
-DROP TABLE IF EXISTS webhook_endpoints CASCADE;
-DROP TABLE IF EXISTS campaigns CASCADE;
-DROP TABLE IF EXISTS products CASCADE;
-DROP TABLE IF EXISTS categories CASCADE;
-DROP TABLE IF EXISTS restaurant_admins CASCADE;
-DROP TABLE IF EXISTS restaurants CASCADE;
-DROP TABLE IF EXISTS profiles CASCADE;
-DROP TABLE IF EXISTS ai_configs CASCADE;
+-- Restaurant logoları için bucket
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+    'restaurant-logos',
+    'restaurant-logos',
+    true,
+    2097152, -- 2MB limit
+    ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/svg+xml']
+)
+ON CONFLICT (id) DO NOTHING;
 
--- Eski tablolar (yeni yapıya göre kaldırılacak)
-DROP TABLE IF EXISTS orders CASCADE;
-DROP TABLE IF EXISTS order_items CASCADE;
-DROP TABLE IF EXISTS tables CASCADE;
-DROP TABLE IF EXISTS menu_items CASCADE;
-DROP TABLE IF EXISTS menu_categories CASCADE;
-DROP TABLE IF EXISTS organization_settings CASCADE;
-DROP TABLE IF EXISTS user_sessions CASCADE;
-DROP TABLE IF EXISTS platform_admins CASCADE;
-DROP TABLE IF EXISTS admin_users CASCADE;
-DROP TABLE IF EXISTS organizations CASCADE;
-DROP TABLE IF EXISTS reviews CASCADE;
-DROP TABLE IF EXISTS loyalty_points CASCADE;
-DROP TABLE IF EXISTS loyalty_rewards CASCADE;
+-- Ürün görselleri için bucket
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+    'product-images',
+    'product-images',
+    true,
+    5242880, -- 5MB limit
+    ARRAY['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- QR kodları için bucket (PDF olarak da indirilecek)
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+    'qr-codes',
+    'qr-codes',
+    true,
+    1048576, -- 1MB limit
+    ARRAY['image/png', 'image/svg+xml', 'application/pdf']
+)
+ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================================
+-- STORAGE POLİTİKALARI
+-- ============================================================================
+
+-- Restaurant logos - Herkes okuyabilir
+CREATE POLICY "Restaurant logoları herkese açık"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'restaurant-logos');
+
+-- Restaurant logos - Sadece kimlik doğrulanmış kullanıcılar yükleyebilir
+CREATE POLICY "Kimlik doğrulanmış kullanıcılar logo yükleyebilir"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (bucket_id = 'restaurant-logos');
+
+-- Restaurant logos - Sadece kendi dosyalarını silebilir
+CREATE POLICY "Kullanıcılar kendi logolarını silebilir"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (bucket_id = 'restaurant-logos');
+
+-- Product images - Herkes okuyabilir
+CREATE POLICY "Ürün görselleri herkese açık"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'product-images');
+
+-- Product images - Kimlik doğrulanmış kullanıcılar yükleyebilir
+CREATE POLICY "Kimlik doğrulanmış kullanıcılar ürün görseli yükleyebilir"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (bucket_id = 'product-images');
+
+-- Product images - Kullanıcılar silebilir
+CREATE POLICY "Kullanıcılar ürün görsellerini silebilir"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (bucket_id = 'product-images');
+
+-- QR codes - Herkes okuyabilir
+CREATE POLICY "QR kodları herkese açık"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'qr-codes');
+
+-- QR codes - Kimlik doğrulanmış kullanıcılar oluşturabilir
+CREATE POLICY "Kimlik doğrulanmış kullanıcılar QR kodu oluşturabilir"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (bucket_id = 'qr-codes');
 
 -- ============================================================================
 -- YENİ TABLOLAR
