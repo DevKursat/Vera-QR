@@ -28,6 +28,7 @@ DROP TABLE IF EXISTS ai_configs CASCADE;
 
 -- Eski tablolar (yeni yapıya göre kaldırılacak)
 DROP TABLE IF EXISTS orders CASCADE;
+DROP TABLE IF EXISTS order_items CASCADE;
 DROP TABLE IF EXISTS tables CASCADE;
 DROP TABLE IF EXISTS menu_items CASCADE;
 DROP TABLE IF EXISTS menu_categories CASCADE;
@@ -36,6 +37,9 @@ DROP TABLE IF EXISTS user_sessions CASCADE;
 DROP TABLE IF EXISTS platform_admins CASCADE;
 DROP TABLE IF EXISTS admin_users CASCADE;
 DROP TABLE IF EXISTS organizations CASCADE;
+DROP TABLE IF EXISTS reviews CASCADE;
+DROP TABLE IF EXISTS loyalty_points CASCADE;
+DROP TABLE IF EXISTS loyalty_rewards CASCADE;
 
 -- ============================================================================
 -- YENİ TABLOLAR
@@ -184,6 +188,122 @@ CREATE TABLE table_calls (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- QR Kod Tablosu (Masalar için)
+CREATE TABLE qr_codes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+    table_number VARCHAR(50) NOT NULL,
+    qr_code_hash VARCHAR(255) UNIQUE NOT NULL,
+    location_description TEXT,
+    status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'damaged')),
+    scan_count INTEGER DEFAULT 0,
+    last_scanned_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(restaurant_id, table_number)
+);
+
+-- Siparişler
+CREATE TABLE orders (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+    qr_code_id UUID REFERENCES qr_codes(id) ON DELETE SET NULL,
+    order_number VARCHAR(50) UNIQUE NOT NULL,
+    customer_name VARCHAR(255),
+    customer_phone VARCHAR(50),
+    customer_notes TEXT,
+    session_id VARCHAR(255),
+    status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'preparing', 'ready', 'served', 'cancelled', 'paid')),
+    subtotal DECIMAL(10,2) NOT NULL,
+    tax_amount DECIMAL(10,2) DEFAULT 0,
+    service_charge DECIMAL(10,2) DEFAULT 0,
+    discount_amount DECIMAL(10,2) DEFAULT 0,
+    total_amount DECIMAL(10,2) NOT NULL,
+    payment_method VARCHAR(50),
+    payment_status VARCHAR(50) DEFAULT 'unpaid' CHECK (payment_status IN ('unpaid', 'paid', 'refunded')),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Sipariş Öğeleri
+CREATE TABLE order_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    product_id UUID NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
+    product_name VARCHAR(255) NOT NULL, -- Ürün silinirse isim kalacak
+    product_price DECIMAL(10,2) NOT NULL,
+    quantity INTEGER NOT NULL CHECK (quantity > 0),
+    notes TEXT, -- Özel istekler (az şekerli, baharatsız vb.)
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Müşteri Yorumları ve Değerlendirmeler
+CREATE TABLE reviews (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+    order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
+    customer_name VARCHAR(255),
+    rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    comment TEXT,
+    response TEXT, -- Restoran yanıtı
+    responded_by UUID REFERENCES profiles(id) ON DELETE SET NULL,
+    responded_at TIMESTAMPTZ,
+    is_published BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Sadakat Programı - Müşteri Puanları
+CREATE TABLE loyalty_points (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+    customer_phone VARCHAR(50) NOT NULL, -- Telefon ile tanımlama
+    customer_name VARCHAR(255),
+    total_points INTEGER DEFAULT 0,
+    lifetime_points INTEGER DEFAULT 0, -- Toplam kazanılan puan
+    last_transaction_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(restaurant_id, customer_phone)
+);
+
+-- Sadakat Programı - Puan İşlemleri
+CREATE TABLE loyalty_transactions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    loyalty_points_id UUID NOT NULL REFERENCES loyalty_points(id) ON DELETE CASCADE,
+    order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
+    transaction_type VARCHAR(50) NOT NULL CHECK (transaction_type IN ('earned', 'redeemed', 'expired', 'adjusted')),
+    points INTEGER NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Sadakat Programı - Ödüller
+CREATE TABLE loyalty_rewards (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    points_required INTEGER NOT NULL,
+    reward_type VARCHAR(50) NOT NULL CHECK (reward_type IN ('discount_percentage', 'discount_amount', 'free_item', 'special_offer')),
+    reward_value JSONB NOT NULL, -- {"percentage": 10} veya {"amount": 50} veya {"product_id": "uuid"}
+    is_active BOOLEAN DEFAULT true,
+    usage_limit INTEGER, -- Kaç kere kullanılabilir (null = sınırsız)
+    valid_from TIMESTAMPTZ,
+    valid_until TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Sadakat Ödül Kullanımları
+CREATE TABLE loyalty_reward_redemptions (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    loyalty_points_id UUID NOT NULL REFERENCES loyalty_points(id) ON DELETE CASCADE,
+    loyalty_reward_id UUID NOT NULL REFERENCES loyalty_rewards(id) ON DELETE CASCADE,
+    order_id UUID REFERENCES orders(id) ON DELETE SET NULL,
+    redeemed_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ============================================================================
 -- İNDEKSLER (Performans için)
 -- ============================================================================
@@ -201,6 +321,19 @@ CREATE INDEX idx_ai_conversations_session ON ai_conversations(session_id);
 CREATE INDEX idx_analytics_restaurant ON analytics_events(restaurant_id);
 CREATE INDEX idx_analytics_type ON analytics_events(event_type);
 CREATE INDEX idx_table_calls_restaurant ON table_calls(restaurant_id);
+CREATE INDEX idx_qr_codes_restaurant ON qr_codes(restaurant_id);
+CREATE INDEX idx_qr_codes_hash ON qr_codes(qr_code_hash);
+CREATE INDEX idx_orders_restaurant ON orders(restaurant_id);
+CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX idx_orders_created ON orders(created_at DESC);
+CREATE INDEX idx_order_items_order ON order_items(order_id);
+CREATE INDEX idx_order_items_product ON order_items(product_id);
+CREATE INDEX idx_reviews_restaurant ON reviews(restaurant_id);
+CREATE INDEX idx_reviews_published ON reviews(is_published);
+CREATE INDEX idx_loyalty_points_restaurant ON loyalty_points(restaurant_id);
+CREATE INDEX idx_loyalty_points_phone ON loyalty_points(customer_phone);
+CREATE INDEX idx_loyalty_transactions_loyalty ON loyalty_transactions(loyalty_points_id);
+CREATE INDEX idx_loyalty_rewards_restaurant ON loyalty_rewards(restaurant_id);
 
 -- ============================================================================
 -- ROW LEVEL SECURITY (RLS) POLİTİKALARI
@@ -217,6 +350,14 @@ ALTER TABLE ai_conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE campaigns ENABLE ROW LEVEL SECURITY;
 ALTER TABLE analytics_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE table_calls ENABLE ROW LEVEL SECURITY;
+ALTER TABLE qr_codes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE loyalty_points ENABLE ROW LEVEL SECURITY;
+ALTER TABLE loyalty_transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE loyalty_rewards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE loyalty_reward_redemptions ENABLE ROW LEVEL SECURITY;
 
 -- Profiles politikaları
 CREATE POLICY "Kullanıcılar kendi profillerini görebilir"
@@ -391,6 +532,127 @@ CREATE POLICY "Restaurant adminler kendi masa çağrılarını yönetebilir"
         )
     );
 
+-- QR Codes politikaları
+CREATE POLICY "Platform adminler tüm QR kodları yönetebilir"
+    ON qr_codes FOR ALL
+    USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE id = auth.uid() AND role = 'platform_admin'
+        )
+    );
+
+CREATE POLICY "Restaurant adminler kendi QR kodlarını yönetebilir"
+    ON qr_codes FOR ALL
+    USING (
+        EXISTS (
+            SELECT 1 FROM restaurant_admins ra
+            WHERE ra.restaurant_id = restaurant_id AND ra.profile_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Herkes aktif QR kodları okuyabilir"
+    ON qr_codes FOR SELECT
+    USING (status = 'active');
+
+-- Orders politikaları
+CREATE POLICY "Restaurant adminler kendi siparişlerini görüntüleyebilir"
+    ON orders FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM restaurant_admins ra
+            WHERE ra.restaurant_id = restaurant_id AND ra.profile_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Restaurant adminler kendi siparişlerini güncelleyebilir"
+    ON orders FOR UPDATE
+    USING (
+        EXISTS (
+            SELECT 1 FROM restaurant_admins ra
+            WHERE ra.restaurant_id = restaurant_id AND ra.profile_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Herkes sipariş oluşturabilir"
+    ON orders FOR INSERT
+    WITH CHECK (true);
+
+-- Order Items politikaları
+CREATE POLICY "Restaurant adminler sipariş öğelerini görüntüleyebilir"
+    ON order_items FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM orders o
+            JOIN restaurant_admins ra ON ra.restaurant_id = o.restaurant_id
+            WHERE o.id = order_id AND ra.profile_id = auth.uid()
+        )
+    );
+
+-- Reviews politikaları
+CREATE POLICY "Restaurant adminler kendi yorumlarını yönetebilir"
+    ON reviews FOR ALL
+    USING (
+        EXISTS (
+            SELECT 1 FROM restaurant_admins ra
+            WHERE ra.restaurant_id = restaurant_id AND ra.profile_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Herkes yayınlanmış yorumları görebilir"
+    ON reviews FOR SELECT
+    USING (is_published = true);
+
+CREATE POLICY "Herkes yorum oluşturabilir"
+    ON reviews FOR INSERT
+    WITH CHECK (true);
+
+-- Loyalty Points politikaları
+CREATE POLICY "Restaurant adminler kendi sadakat puanlarını yönetebilir"
+    ON loyalty_points FOR ALL
+    USING (
+        EXISTS (
+            SELECT 1 FROM restaurant_admins ra
+            WHERE ra.restaurant_id = restaurant_id AND ra.profile_id = auth.uid()
+        )
+    );
+
+-- Loyalty Transactions politikaları
+CREATE POLICY "Restaurant adminler sadakat işlemlerini görüntüleyebilir"
+    ON loyalty_transactions FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM loyalty_points lp
+            JOIN restaurant_admins ra ON ra.restaurant_id = lp.restaurant_id
+            WHERE lp.id = loyalty_points_id AND ra.profile_id = auth.uid()
+        )
+    );
+
+-- Loyalty Rewards politikaları
+CREATE POLICY "Restaurant adminler kendi ödüllerini yönetebilir"
+    ON loyalty_rewards FOR ALL
+    USING (
+        EXISTS (
+            SELECT 1 FROM restaurant_admins ra
+            WHERE ra.restaurant_id = restaurant_id AND ra.profile_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Herkes aktif ödülleri görebilir"
+    ON loyalty_rewards FOR SELECT
+    USING (is_active = true);
+
+-- Loyalty Reward Redemptions politikaları
+CREATE POLICY "Restaurant adminler ödül kullanımlarını görüntüleyebilir"
+    ON loyalty_reward_redemptions FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM loyalty_points lp
+            JOIN restaurant_admins ra ON ra.restaurant_id = lp.restaurant_id
+            WHERE lp.id = loyalty_points_id AND ra.profile_id = auth.uid()
+        )
+    );
+
 -- ============================================================================
 -- TRIGGER'LAR
 -- ============================================================================
@@ -427,6 +689,21 @@ CREATE TRIGGER update_campaigns_updated_at BEFORE UPDATE ON campaigns
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_table_calls_updated_at BEFORE UPDATE ON table_calls
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_qr_codes_updated_at BEFORE UPDATE ON qr_codes
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_reviews_updated_at BEFORE UPDATE ON reviews
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_loyalty_points_updated_at BEFORE UPDATE ON loyalty_points
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_loyalty_rewards_updated_at BEFORE UPDATE ON loyalty_rewards
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================================================
@@ -515,6 +792,53 @@ VALUES (
 )
 ON CONFLICT (restaurant_id) DO NOTHING;
 
+-- QR Kodları (Masalar için)
+INSERT INTO qr_codes (restaurant_id, table_number, qr_code_hash, location_description, status)
+SELECT
+    '10000000-0000-0000-0000-000000000001',
+    'Masa ' || series::text,
+    encode(gen_random_bytes(16), 'hex'),
+    CASE
+        WHEN series <= 5 THEN 'Ana Salon'
+        WHEN series <= 8 THEN 'Teras'
+        ELSE 'Özel Oda'
+    END,
+    'active'
+FROM generate_series(1, 10) series
+ON CONFLICT (restaurant_id, table_number) DO NOTHING;
+
+-- Sadakat Ödülleri
+INSERT INTO loyalty_rewards (restaurant_id, title, description, points_required, reward_type, reward_value, is_active)
+VALUES
+    (
+        '10000000-0000-0000-0000-000000000001',
+        'Ücretsiz Espresso',
+        '100 puanla ücretsiz espresso kazanın',
+        100,
+        'free_item',
+        '{"item_name": "Espresso"}'::jsonb,
+        true
+    ),
+    (
+        '10000000-0000-0000-0000-000000000001',
+        '%10 İndirim',
+        '200 puanla %10 indirim kazanın',
+        200,
+        'discount_percentage',
+        '{"percentage": 10}'::jsonb,
+        true
+    ),
+    (
+        '10000000-0000-0000-0000-000000000001',
+        'Ücretsiz Tatlı',
+        '300 puanla ücretsiz tatlı kazanın',
+        300,
+        'free_item',
+        '{"item_name": "Tiramisu"}'::jsonb,
+        true
+    )
+ON CONFLICT DO NOTHING;
+
 -- ============================================================================
 -- YORUMLAR
 -- ============================================================================
@@ -529,3 +853,11 @@ COMMENT ON TABLE ai_conversations IS 'AI asistan konuşma geçmişi';
 COMMENT ON TABLE campaigns IS 'Kampanyalar ve promosyonlar';
 COMMENT ON TABLE analytics_events IS 'Analitik ve takip olayları';
 COMMENT ON TABLE table_calls IS 'Masa çağrı sistemi';
+COMMENT ON TABLE qr_codes IS 'Masa QR kodları';
+COMMENT ON TABLE orders IS 'Müşteri siparişleri';
+COMMENT ON TABLE order_items IS 'Sipariş öğeleri';
+COMMENT ON TABLE reviews IS 'Müşteri yorumları ve değerlendirmeleri';
+COMMENT ON TABLE loyalty_points IS 'Müşteri sadakat puanları';
+COMMENT ON TABLE loyalty_transactions IS 'Sadakat puan işlemleri';
+COMMENT ON TABLE loyalty_rewards IS 'Sadakat ödülleri';
+COMMENT ON TABLE loyalty_reward_redemptions IS 'Ödül kullanımları';
