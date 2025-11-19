@@ -103,9 +103,7 @@ export default function LoginPage() {
           description: 'Platform admin paneline yönlendiriliyorsunuz...',
         })
         // Keep loading state true during redirect
-        // Use router.push for client-side navigation
-        router.push('/admin/dashboard')
-        router.refresh()
+        window.location.href = '/admin/dashboard'
         return
       }
     
@@ -129,9 +127,8 @@ export default function LoginPage() {
           title: 'Giriş Başarılı',
           description: 'Restoran admin paneline yönlendiriliyorsunuz...',
         })
-        // Use router.push for client-side navigation
-        router.push('/dashboard')
-        router.refresh()
+        // Keep loading state true during redirect
+        window.location.href = '/dashboard'
         return
       }
 

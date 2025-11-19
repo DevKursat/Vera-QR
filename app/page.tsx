@@ -20,11 +20,8 @@ export default function HomePage() {
             <Link href="#pricing" className="text-sm hover:text-primary transition">
               Fiyatlandırma
             </Link>
-            <Link href="/auth/login" className="text-sm hover:text-primary transition">
-              Giriş Yap
-            </Link>
             <Button asChild>
-              <Link href="/auth/register">Ücretsiz Dene</Link>
+              <Link href="/auth/login">Giriş Yap</Link>
             </Button>
           </nav>
         </div>
@@ -41,7 +38,7 @@ export default function HomePage() {
         </p>
         <div className="flex gap-4 justify-center">
           <Button size="lg" asChild>
-            <Link href="/auth/register">Hemen Başla</Link>
+            <Link href="/auth/login">Giriş Yap</Link>
           </Button>
           <Button size="lg" variant="outline" asChild>
             <Link href="#features">Daha Fazla Bilgi</Link>
@@ -149,7 +146,7 @@ export default function HomePage() {
                 <li>✓ Email destek</li>
               </ul>
               <Button className="w-full mt-6" variant="outline" asChild>
-                <Link href="/auth/register?plan=starter">Başla</Link>
+                <Link href="/auth/login">Giriş Yap</Link>
               </Button>
             </CardContent>
           </Card>
@@ -173,7 +170,7 @@ export default function HomePage() {
                 <li>✓ Öncelikli destek</li>
               </ul>
               <Button className="w-full mt-6" asChild>
-                <Link href="/auth/register?plan=pro">Başla</Link>
+                <Link href="/auth/login">Giriş Yap</Link>
               </Button>
             </CardContent>
           </Card>
@@ -197,7 +194,7 @@ export default function HomePage() {
                 <li>✓ 7/24 destek</li>
               </ul>
               <Button className="w-full mt-6" variant="outline" asChild>
-                <Link href="/contact">İletişime Geç</Link>
+                <Link href="/auth/login">Giriş Yap</Link>
               </Button>
             </CardContent>
           </Card>
