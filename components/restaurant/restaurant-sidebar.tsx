@@ -49,7 +49,7 @@ export default function RestaurantSidebar({ organization }: Props) {
       <div className="lg:hidden fixed top-4 left-4 z-50">
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="p-2 rounded-lg bg-white shadow-md"
+          className="p-2 rounded-lg bg-white dark:bg-background shadow-md"
         >
           {isMobileMenuOpen ? (
             <X className="h-6 w-6" />
@@ -62,13 +62,13 @@ export default function RestaurantSidebar({ organization }: Props) {
       {/* Sidebar */}
       <div
         className={cn(
-          'fixed inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 transform transition-transform duration-200 ease-in-out',
+          'fixed inset-y-0 left-0 z-40 w-64 bg-white dark:bg-background border-r border-slate-200 dark:border-border transform transition-transform duration-200 ease-in-out',
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         )}
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="flex items-center gap-3 h-16 px-6 border-b border-slate-200">
+          <div className="flex items-center gap-3 h-16 px-6 border-b border-slate-200 dark:border-border">
             {organization?.logo_url ? (
               <img
                 src={organization.logo_url}
@@ -85,7 +85,7 @@ export default function RestaurantSidebar({ organization }: Props) {
             )}
             <div className="flex-1 min-w-0">
               <h1 className="text-sm font-bold truncate">{organization?.name}</h1>
-              <p className="text-xs text-slate-500 truncate">Restoran Paneli</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Restoran Paneli</p>
             </div>
           </div>
 
@@ -102,7 +102,7 @@ export default function RestaurantSidebar({ organization }: Props) {
                     'flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors',
                     isActive
                       ? 'text-white'
-                      : 'text-slate-700 hover:bg-slate-100'
+                      : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800'
                   )}
                   style={
                     isActive

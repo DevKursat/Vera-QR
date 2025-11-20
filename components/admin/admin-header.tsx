@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Bell, LogOut, User } from 'lucide-react'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 export default function AdminHeader() {
   const [user, setUser] = useState<any>(null)
@@ -41,10 +42,11 @@ export default function AdminHeader() {
   }
 
   return (
-    <header className="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-6">
+    <header className="h-16 border-b border-slate-200 dark:border-border bg-white dark:bg-background flex items-center justify-between px-6">
       <div className="flex-1" />
       
       <div className="flex items-center gap-4">
+        <ThemeToggle />
         {/* Notifications */}
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />

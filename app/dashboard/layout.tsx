@@ -16,7 +16,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-background">
       <RestaurantSidebar organization={adminInfo.organization} />
       <div className="lg:pl-64">
         <RestaurantHeader admin={adminInfo} />

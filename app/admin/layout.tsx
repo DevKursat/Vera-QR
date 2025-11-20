@@ -22,7 +22,7 @@ export default async function AdminLayout({
   console.log('✅ Admin Layout - Admin doğrulandı, layout render ediliyor')
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 dark:bg-background">
       <AdminSidebar />
       <div className="lg:pl-64">
         <AdminHeader />

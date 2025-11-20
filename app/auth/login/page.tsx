@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/components/ui/use-toast'
 import { Loader2 } from 'lucide-react'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -104,8 +105,9 @@ export default function LoginPage() {
         description: 'Platform admin paneline yönlendiriliyorsunuz...',
       })
       // Direct navigation - middleware will handle the redirect
-      console.log('🚀 window.location.href çağrılıyor...')
-      window.location.href = '/admin/dashboard'
+      console.log('🚀 Yönlendirme başlatılıyor...')
+      router.refresh()
+      router.push('/admin/dashboard')
       console.log('✅ Redirect komutu verildi')
       return
     }      // Check restaurant admin
@@ -129,7 +131,8 @@ export default function LoginPage() {
           description: 'Restoran admin paneline yönlendiriliyorsunuz...',
         })
         // Direct navigation for restaurant admin
-        window.location.href = '/dashboard'
+        router.refresh()
+        router.push('/dashboard')
         return
       }
 
@@ -154,8 +157,12 @@ export default function LoginPage() {
   }
 
   return (
-    <Card>
-      <CardHeader className="space-y-1">
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
         <div className="flex justify-center mb-4">
           <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center">
             <span className="text-2xl font-bold text-white">VQ</span>
@@ -210,5 +217,6 @@ export default function LoginPage() {
         </CardFooter>
       </form>
     </Card>
+    </div>
   )
 }

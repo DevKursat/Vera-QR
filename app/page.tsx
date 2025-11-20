@@ -5,9 +5,9 @@ import { QrCode, Brain, Utensils, TrendingUp, Shield, Zap, Bot } from 'lucide-re
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-white to-gray-50 dark:from-background dark:to-background">
       {/* Header */}
-      <header className="border-b bg-white/50 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b bg-white/50 dark:bg-background/50 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Bot className="h-8 w-8 text-primary" />
@@ -48,7 +48,7 @@ export default function HomePage() {
           </Button>
         </div>
         <div className="mt-16 relative">
-          <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent z-10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent dark:from-background dark:via-transparent dark:to-transparent z-10" />
           <img
             src="https://images.unsplash.com/photo-1559339352-11d035aa65de?w=1200&q=80"
             alt="QR Menu Demo"
@@ -205,7 +205,7 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t bg-white">
+      <footer className="border-t bg-white dark:bg-background">
         <div className="container mx-auto px-4 py-8">
           <div className="grid md:grid-cols-4 gap-8">
             <div>

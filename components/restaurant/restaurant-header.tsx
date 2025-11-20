@@ -14,6 +14,7 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { ExternalLink, LogOut, User } from 'lucide-react'
 import Link from 'next/link'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 
 interface Props {
   admin: any
@@ -29,7 +30,7 @@ export default function RestaurantHeader({ admin }: Props) {
   }
 
   return (
-    <header className="h-16 border-b border-slate-200 bg-white flex items-center justify-between px-6">
+    <header className="h-16 border-b border-slate-200 dark:border-border bg-white dark:bg-background flex items-center justify-between px-6">
       <div className="flex items-center gap-4">
         <Link
           href={`/${admin.organization?.slug}`}
@@ -42,6 +43,7 @@ export default function RestaurantHeader({ admin }: Props) {
       </div>
       
       <div className="flex items-center gap-4">
+        <ThemeToggle />
         {/* User menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
