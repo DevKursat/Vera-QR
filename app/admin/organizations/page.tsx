@@ -7,8 +7,8 @@ import OrganizationsList from '@/components/admin/organizations-list'
 
 export default async function OrganizationsPage() {
   const supabase = createClient()
-  const { data: organizations, error } = await supabase
-    .from('organizations')
+  const { data: restaurants, error } = await supabase
+    .from('restaurants')
     .select('*')
     .order('created_at', { ascending: false })
 
@@ -31,10 +31,10 @@ export default async function OrganizationsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Tüm İşletmeler ({organizations?.length || 0})</CardTitle>
+          <CardTitle>Tüm İşletmeler ({restaurants?.length || 0})</CardTitle>
         </CardHeader>
         <CardContent>
-          <OrganizationsList organizations={organizations || []} />
+          <OrganizationsList organizations={restaurants || []} />
         </CardContent>
       </Card>
     </div>

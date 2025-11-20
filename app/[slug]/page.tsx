@@ -10,89 +10,100 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = createClient()
-  const { data: organization } = await supabase
-    .from('organizations')
+  const { data: restaurant } = await supabase
+    .from('restaurants')
     .select('name, description')
     .eq('slug', params.slug)
     .eq('status', 'active')
     .maybeSingle()
 
-  if (!organization) {
+  if (!restaurant) {
     return {
-      title: 'Restaurant Not Found',
+      title: 'Restoran Bulunamadı',
     }
   }
 
   return {
-    title: `${organization.name} - Digital Menu`,
-    description: organization.description || `View the menu at ${organization.name}`,
+    title: `${restaurant.name} - Dijital Menü`,
+    description: restaurant.description || `${restaurant.name} menüsünü görüntüleyin`,
   }
 }
 
 export default async function RestaurantPage({ params, searchParams }: Props) {
   const supabase = createClient()
-  // Fetch organization
-  const { data: organization, error: orgError } = await supabase
-    .from('organizations')
+  // Fetch restaurant
+  const { data: restaurant, error: restaurantError } = await supabase
+    .from('restaurants')
     .select('*')
     .eq('slug', params.slug)
     .eq('status', 'active')
     .maybeSingle()
 
-  if (orgError || !organization) {
+  if (restaurantError || !restaurant) {
     notFound()
   }
 
   // Fetch categories
   const { data: categories } = await supabase
-    .from('menu_categories')
+    .from('categories')
     .select('*')
-    .eq('organization_id', organization.id)
+    .eq('restaurant_id', restaurant.id)
     .eq('visible', true)
     .order('display_order', { ascending: true })
 
-  // Fetch menu items
-  const { data: menuItems } = await supabase
-    .from('menu_items')
+  // Fetch menu items (products)
+  const { data: products } = await supabase
+    .from('products')
     .select('*')
-    .eq('organization_id', organization.id)
-    .eq('available', true)
+    .eq('restaurant_id', restaurant.id)
+    .eq('is_available', true)
     .order('display_order', { ascending: true })
 
   // Fetch active campaigns
   const { data: campaigns } = await supabase
     .from('campaigns')
     .select('*')
-    .eq('organization_id', organization.id)
+    .eq('restaurant_id', restaurant.id)
     .eq('active', true)
     .lte('start_date', new Date().toISOString())
     .gte('end_date', new Date().toISOString())
 
-  // Get table info if provided
-  let tableInfo = null
-  if (searchParams.table && searchParams.qr) {
-    const { data: table } = await supabase
-      .from('tables')
+  // Get QR code info if provided
+  let qrCodeInfo = null
+  if (searchParams.qr) {
+    const { data: qrCode } = await supabase
+      .from('qr_codes')
       .select('*')
-      .eq('id', searchParams.table)
-      .eq('qr_code', searchParams.qr)
+      .eq('qr_code_hash', searchParams.qr)
+      .eq('restaurant_id', restaurant.id)
       .maybeSingle()
 
-    tableInfo = table
+    qrCodeInfo = qrCode
+    
+    // Update scan count
+    if (qrCode) {
+      await supabase
+        .from('qr_codes')
+        .update({ 
+          scan_count: (qrCode.scan_count || 0) + 1,
+          last_scanned_at: new Date().toISOString()
+        })
+        .eq('id', qrCode.id)
+    }
   }
 
   // Organize menu by categories
   const menuByCategory = categories?.map(category => ({
     ...category,
-    items: menuItems?.filter(item => item.category_id === category.id) || [],
+    items: products?.filter(item => item.category_id === category.id) || [],
   })) || []
 
   return (
     <RestaurantMenu
-      organization={organization}
+      organization={restaurant}
       categories={menuByCategory}
       campaigns={campaigns || []}
-      tableInfo={tableInfo}
+      tableInfo={qrCodeInfo}
     />
   )
 }

@@ -87,30 +87,21 @@ export async function isPlatformAdmin() {
   }
   
   const supabase = createClient()
-  const { data, error } = await supabase
-    .from('platform_admins')
-    .select('id, is_super_admin')
-    .eq('user_id', user.id)
-    .maybeSingle()
+  const { data, error } = await (supabase
+    .from('profiles')
+    .select('id, role')
+    .eq('id', user.id)
+    .eq('role', 'platform_admin')
+    .maybeSingle() as any)
   
   console.log('🔍 isPlatformAdmin - Query result:', { data, error })
   
   return !!data
 }
 
-// Check if user is super admin
+// Check if user is super admin (same as platform admin for now)
 export async function isSuperAdmin() {
-  const user = await getCurrentUser()
-  if (!user) return false
-  
-  const supabase = createClient()
-  const { data } = await supabase
-    .from('platform_admins')
-    .select('is_super_admin')
-    .eq('user_id', user.id)
-    .maybeSingle()
-  
-  return data?.is_super_admin === true
+  return isPlatformAdmin()
 }
 
 // Get user's restaurant admin info
@@ -119,47 +110,46 @@ export async function getRestaurantAdminInfo() {
   if (!user) return null
   
   const supabase = createClient()
-  const { data } = await supabase
-    .from('admin_users')
-    .select('*, organization:organizations(*)')
-    .eq('user_id', user.id)
-    .maybeSingle()
+  const { data } = await (supabase
+    .from('restaurant_admins')
+    .select('*, restaurant:restaurants(*)')
+    .eq('profile_id', user.id)
+    .maybeSingle() as any)
   
   return data
 }
 
-// Check if user has access to organization
-export async function hasOrganizationAccess(organizationId: string) {
+// Check if user has access to restaurant
+export async function hasRestaurantAccess(restaurantId: string) {
   const user = await getCurrentUser()
   if (!user) return false
   
   // Check if platform admin
   if (await isPlatformAdmin()) return true
   
-  // Check if restaurant admin for this org
+  // Check if restaurant admin for this restaurant
   const supabase = createClient()
-  const { data } = await supabase
-    .from('admin_users')
+  const { data } = await (supabase
+    .from('restaurant_admins')
     .select('id')
-    .eq('user_id', user.id)
-    .eq('organization_id', organizationId)
-    .maybeSingle()
+    .eq('profile_id', user.id)
+    .eq('restaurant_id', restaurantId)
+    .maybeSingle() as any)
   
   return !!data
 }
 
-// Get user role for organization
-export async function getUserRole(organizationId: string): Promise<'owner' | 'admin' | 'staff' | null> {
+// Get user role
+export async function getUserRole(): Promise<'platform_admin' | 'restaurant_admin' | 'staff' | null> {
   const user = await getCurrentUser()
   if (!user) return null
   
   const supabase = createClient()
-  const { data } = await supabase
-    .from('admin_users')
+  const { data } = await (supabase
+    .from('profiles')
     .select('role')
-    .eq('user_id', user.id)
-    .eq('organization_id', organizationId)
-    .maybeSingle()
+    .eq('id', user.id)
+    .maybeSingle() as any)
   
   return data?.role as any || null
 }
