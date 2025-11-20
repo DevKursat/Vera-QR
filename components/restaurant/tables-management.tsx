@@ -4,29 +4,30 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { QrCode, Download, Edit, Trash } from 'lucide-react'
+import { QrCode, Download, Edit } from 'lucide-react'
 import QRCode from 'qrcode'
 
-interface Table {
+interface QrCodeItem {
   id: string
   table_number: string
-  location_description: string
+  location_description: string | null
   status: string
-  qr_code: string
+  qr_code_hash: string
 }
 
 interface Props {
-  tables: Table[]
-  organization: any
+  qrCodes: QrCodeItem[]
+  restaurant: any
 }
 
-export default function TablesManagement({ tables, organization }: Props) {
+export default function TablesManagement({ qrCodes, restaurant }: Props) {
   const [generatingQR, setGeneratingQR] = useState<string | null>(null)
 
-  const downloadQRCode = async (table: Table) => {
-    setGeneratingQR(table.id)
+  const downloadQRCode = async (qrCode: QrCodeItem) => {
+    setGeneratingQR(qrCode.id)
     try {
-      const url = `${process.env.NEXT_PUBLIC_APP_URL || 'https://veraqr.com'}/${organization.slug}?table=${table.id}`
+      // URL format: veraqr.com/slug?table=qr_hash
+      const url = `${process.env.NEXT_PUBLIC_APP_URL || 'https://veraqr.com'}/${restaurant.slug}?table=${qrCode.qr_code_hash}`
       
       const canvas = document.createElement('canvas')
       await QRCode.toCanvas(canvas, url, {
@@ -52,19 +53,19 @@ export default function TablesManagement({ tables, organization }: Props) {
       ctx.drawImage(canvas, 44, 100, 512, 512)
 
       // Title
-      ctx.fillStyle = organization.brand_color || '#000000'
+      ctx.fillStyle = restaurant.primary_color || '#000000'
       ctx.font = 'bold 32px Arial'
       ctx.textAlign = 'center'
-      ctx.fillText(organization.name, 300, 50)
+      ctx.fillText(restaurant.name, 300, 50)
 
       // Table number
       ctx.fillStyle = '#000000'
       ctx.font = 'bold 40px Arial'
-      ctx.fillText(`Masa ${table.table_number}`, 300, 650)
+      ctx.fillText(qrCode.table_number, 300, 650)
 
       // Download
       const link = document.createElement('a')
-      link.download = `Masa-${table.table_number}-QR.png`
+      link.download = `Masa-${qrCode.table_number.replace(' ', '-')}-QR.png`
       link.href = finalCanvas.toDataURL()
       link.click()
     } catch (error) {
@@ -77,17 +78,17 @@ export default function TablesManagement({ tables, organization }: Props) {
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
-      available: { label: 'Müsait', variant: 'default' },
-      occupied: { label: 'Dolu', variant: 'destructive' },
-      reserved: { label: 'Rezerve', variant: 'secondary' },
+      active: { label: 'Aktif', variant: 'default' },
+      inactive: { label: 'Pasif', variant: 'secondary' },
+      damaged: { label: 'Hasarlı', variant: 'destructive' },
     }
-    const { label, variant } = config[status] || config.available
+    const { label, variant } = config[status] || { label: status, variant: 'secondary' }
     return <Badge variant={variant}>{label}</Badge>
   }
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {tables.length === 0 ? (
+      {qrCodes.length === 0 ? (
         <Card className="col-span-full">
           <CardContent className="text-center py-12">
             <p className="text-slate-500 mb-4">Henüz masa eklenmemiş.</p>
@@ -95,16 +96,16 @@ export default function TablesManagement({ tables, organization }: Props) {
           </CardContent>
         </Card>
       ) : (
-        tables.map((table) => (
-          <Card key={table.id}>
+        qrCodes.map((qrCode) => (
+          <Card key={qrCode.id}>
             <CardHeader>
               <div className="flex items-start justify-between">
-                <CardTitle>Masa {table.table_number}</CardTitle>
-                {getStatusBadge(table.status)}
+                <CardTitle>{qrCode.table_number}</CardTitle>
+                {getStatusBadge(qrCode.status)}
               </div>
-              {table.location_description && (
+              {qrCode.location_description && (
                 <p className="text-sm text-slate-600 mt-2">
-                  {table.location_description}
+                  {qrCode.location_description}
                 </p>
               )}
             </CardHeader>
@@ -117,11 +118,11 @@ export default function TablesManagement({ tables, organization }: Props) {
                   size="sm"
                   variant="outline"
                   className="flex-1"
-                  onClick={() => downloadQRCode(table)}
-                  disabled={generatingQR === table.id}
+                  onClick={() => downloadQRCode(qrCode)}
+                  disabled={generatingQR === qrCode.id}
                 >
                   <Download className="h-4 w-4 mr-1" />
-                  {generatingQR === table.id ? 'Hazırlanıyor...' : 'İndir'}
+                  {generatingQR === qrCode.id ? 'Hazırlanıyor...' : 'İndir'}
                 </Button>
                 <Button size="sm" variant="ghost">
                   <Edit className="h-4 w-4" />

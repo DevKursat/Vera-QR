@@ -2,13 +2,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import NewOrganizationForm from '@/components/admin/new-organization-form'
+import NewRestaurantForm from '@/components/admin/new-restaurant-form'
 
-export default function NewOrganizationPage() {
+export default function NewRestaurantPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Link href="/admin/organizations">
+        <Link href="/admin/restaurants">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -21,7 +21,7 @@ export default function NewOrganizationPage() {
         </div>
       </div>
 
-      <NewOrganizationForm />
+      <NewRestaurantForm />
     </div>
   )
 }

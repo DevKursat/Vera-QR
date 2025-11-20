@@ -26,7 +26,7 @@ const PERSONALITY_OPTIONS = [
   { value: 'casual', label: 'Rahat', description: 'Gevşek ve arkadaşça' },
 ]
 
-export default function NewOrganizationForm() {
+export default function NewRestaurantForm() {
   const router = useRouter()
   const { toast } = useToast()
 
@@ -74,15 +74,15 @@ export default function NewOrganizationForm() {
     }
   }
 
-  const uploadLogo = async (organizationId: string): Promise<string | null> => {
+  const uploadLogo = async (restaurantId: string): Promise<string | null> => {
     if (!logoFile) return null
 
     const fileExt = logoFile.name.split('.').pop()
-    const fileName = `${organizationId}-${Date.now()}.${fileExt}`
+    const fileName = `${restaurantId}-${Date.now()}.${fileExt}`
     const filePath = `logos/${fileName}`
 
     const { error: uploadError } = await supabase.storage
-      .from('organizations')
+      .from('restaurant-logos')
       .upload(filePath, logoFile)
 
     if (uploadError) {
@@ -91,7 +91,7 @@ export default function NewOrganizationForm() {
     }
 
     const { data: { publicUrl } } = supabase.storage
-      .from('organizations')
+      .from('restaurant-logos')
       .getPublicUrl(filePath)
 
     return publicUrl
@@ -162,7 +162,7 @@ export default function NewOrganizationForm() {
       const categoryPromises = formData.categories.map((categoryName, index) =>
         (supabase.from('categories').insert({
           restaurant_id: restaurant.id,
-          name: categoryName,
+          name_tr: categoryName,
           display_order: index,
           visible: true,
         } as any) as any)
@@ -187,10 +187,10 @@ export default function NewOrganizationForm() {
         description: `${formData.name} başarıyla oluşturuldu.`,
       })
 
-      router.push('/admin/organizations')
+      router.push('/admin/restaurants')
       router.refresh()
     } catch (error: any) {
-      console.error('Error creating organization:', error)
+      console.error('Error creating restaurant:', error)
       toast({
         variant: 'destructive',
         title: 'Hata',

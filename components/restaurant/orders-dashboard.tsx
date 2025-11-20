@@ -13,18 +13,19 @@ import { Clock, CheckCircle, XCircle, ChefHat } from 'lucide-react'
 interface Order {
   id: string
   order_number: string
-  items: any[]
+  items: any[] // In a real app, this would be joined or fetched via order_items
   total_amount: number
   status: string
   customer_name: string | null
   customer_notes: string | null
-  table: { table_number: string; location_description: string } | null
+  // table: { table_number: string; location_description: string } | null // Replaced by qr_code
+  qr_code: { table_number: string; location_description: string | null } | null
   created_at: string
 }
 
 interface Props {
   initialOrders: Order[]
-  organizationId: string
+  restaurantId: string
 }
 
 const STATUS_CONFIG = {
@@ -33,9 +34,10 @@ const STATUS_CONFIG = {
   ready: { label: 'Hazır', color: 'bg-green-500', icon: CheckCircle },
   served: { label: 'Teslim Edildi', color: 'bg-slate-500', icon: CheckCircle },
   cancelled: { label: 'İptal', color: 'bg-red-500', icon: XCircle },
+  paid: { label: 'Ödendi', color: 'bg-emerald-600', icon: CheckCircle },
 }
 
-export default function OrdersDashboard({ initialOrders, organizationId }: Props) {
+export default function OrdersDashboard({ initialOrders, restaurantId }: Props) {
   const [orders, setOrders] = useState<Order[]>(initialOrders)
   const [activeTab, setActiveTab] = useState('all')
 
@@ -49,14 +51,14 @@ export default function OrdersDashboard({ initialOrders, organizationId }: Props
           event: '*',
           schema: 'public',
           table: 'orders',
-          filter: `organization_id=eq.${organizationId}`,
+          filter: `restaurant_id=eq.${restaurantId}`,
         },
         async (payload) => {
           if (payload.eventType === 'INSERT') {
             // Fetch full order with table info
             const { data } = await supabase
               .from('orders')
-              .select('*, table:tables(table_number, location_description)')
+              .select('*, qr_code:qr_codes(table_number, location_description)')
               .eq('id', payload.new.id)
               .single()
 
@@ -81,7 +83,7 @@ export default function OrdersDashboard({ initialOrders, organizationId }: Props
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [organizationId])
+  }, [restaurantId])
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     const { error } = await (supabase
@@ -133,7 +135,7 @@ export default function OrdersDashboard({ initialOrders, organizationId }: Props
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredOrders.map((order) => {
-                const statusConfig = STATUS_CONFIG[order.status as keyof typeof STATUS_CONFIG]
+                const statusConfig = STATUS_CONFIG[order.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.pending
                 const StatusIcon = statusConfig.icon
 
                 return (
@@ -144,9 +146,9 @@ export default function OrdersDashboard({ initialOrders, organizationId }: Props
                           <CardTitle className="text-lg">
                             {order.order_number}
                           </CardTitle>
-                          {order.table && (
+                          {order.qr_code && (
                             <p className="text-sm text-slate-600 mt-1">
-                              Masa {order.table.table_number}
+                              Masa {order.qr_code.table_number}
                             </p>
                           )}
                         </div>
@@ -166,22 +168,33 @@ export default function OrdersDashboard({ initialOrders, organizationId }: Props
                     </CardHeader>
 
                     <CardContent className="space-y-4">
-                      {/* Order Items */}
-                      <div className="space-y-2">
-                        {order.items.map((item: any, idx: number) => (
-                          <div
-                            key={idx}
-                            className="flex items-center justify-between text-sm"
-                          >
-                            <span>
-                              {item.quantity}x {item.name}
-                            </span>
-                            <span className="font-semibold">
-                              ₺{(item.price * item.quantity).toFixed(2)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
+                      {/* Order Items (Assuming items is populated or fetched - simplifying for dashboard view) */}
+                      {/* Note: In strict schema, items are in order_items table.
+                          We might need to join them in the query or fetch separately.
+                          For this component, we assume 'items' might be attached or we simplify.*/}
+
+                      {/* If items are not joined, we just show total */}
+                      {order.items && order.items.length > 0 ? (
+                         <div className="space-y-2">
+                          {order.items.map((item: any, idx: number) => (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between text-sm"
+                            >
+                              <span>
+                                {item.quantity}x {item.product_name || item.name}
+                              </span>
+                              <span className="font-semibold">
+                                ₺{(item.product_price * item.quantity).toFixed(2)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-slate-500 italic">
+                          Ürün detayları yüklenemedi veya yok.
+                        </div>
+                      )}
 
                       {order.customer_notes && (
                         <div className="p-2 bg-slate-50 rounded text-sm">

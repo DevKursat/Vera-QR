@@ -9,25 +9,25 @@ import { Badge } from '@/components/ui/badge'
 
 interface Category {
   id: string
-  name: string
-  visible: boolean
-  display_order: number
+  name_tr: string
+  visible: boolean | null
+  display_order: number | null
 }
 
-interface MenuItem {
+interface Product {
   id: string
-  category_id: string
-  name: string
-  description: string
+  category_id: string | null
+  name_tr: string
+  description_tr: string | null
   price: number
   image_url: string | null
-  available: boolean
+  is_available: boolean | null
   stock_count: number | null
 }
 
 interface Props {
   categories: Category[]
-  items: MenuItem[]
+  items: Product[]
 }
 
 export default function MenuCategoriesList({ categories, items }: Props) {
@@ -69,7 +69,7 @@ export default function MenuCategoriesList({ categories, items }: Props) {
                   >
                     {isExpanded ? '▼' : '▶'}
                   </Button>
-                  <CardTitle className="text-lg">{category.name}</CardTitle>
+                  <CardTitle className="text-lg">{category.name_tr}</CardTitle>
                   <Badge variant={category.visible ? 'default' : 'secondary'}>
                     {category.visible ? 'Görünür' : 'Gizli'}
                   </Badge>
@@ -108,25 +108,25 @@ export default function MenuCategoriesList({ categories, items }: Props) {
                           {item.image_url && (
                             <img
                               src={item.image_url}
-                              alt={item.name}
+                              alt={item.name_tr}
                               className="w-full h-32 object-cover rounded-lg mb-3"
                             />
                           )}
                           <div className="flex items-start justify-between mb-2">
-                            <h4 className="font-semibold">{item.name}</h4>
+                            <h4 className="font-semibold">{item.name_tr}</h4>
                             <Badge
-                              variant={item.available ? 'default' : 'destructive'}
+                              variant={item.is_available ? 'default' : 'destructive'}
                             >
-                              {item.available ? (
+                              {item.is_available ? (
                                 <Eye className="h-3 w-3" />
                               ) : (
                                 <EyeOff className="h-3 w-3" />
                               )}
                             </Badge>
                           </div>
-                          {item.description && (
+                          {item.description_tr && (
                             <p className="text-sm text-slate-600 mb-2 line-clamp-2">
-                              {item.description}
+                              {item.description_tr}
                             </p>
                           )}
                           <div className="flex items-center justify-between">
