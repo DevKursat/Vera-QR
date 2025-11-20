@@ -3,9 +3,9 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Loader2, Check, X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Loader2, Check, X, Search } from 'lucide-react'
 import { supabase } from '@/lib/supabase/client'
-import { useDebounce } from 'use-debounce'
 import { slugify } from '@/lib/utils'
 
 interface SlugInputProps {
@@ -18,17 +18,19 @@ interface SlugInputProps {
 
 export default function SlugInput({ value, onChange, currentId, label = "URL Slug", disabled = false }: SlugInputProps) {
   const [inputValue, setInputValue] = useState(value)
-  const [debouncedValue] = useDebounce(inputValue, 500)
   const [isValid, setIsValid] = useState<boolean | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string>('')
 
+  // Sync internal state with prop value if it changes externally
   useEffect(() => {
-    setInputValue(value)
+    if (value !== inputValue) {
+       setInputValue(value)
+    }
   }, [value])
 
-  const checkAvailability = useCallback(async (slug: string) => {
-    if (!slug) {
+  const checkAvailability = async () => {
+    if (!inputValue) {
       setIsValid(null)
       setErrorMessage('')
       return
@@ -39,7 +41,7 @@ export default function SlugInput({ value, onChange, currentId, label = "URL Slu
       let query = supabase
         .from('restaurants')
         .select('id')
-        .eq('slug', slug)
+        .eq('slug', inputValue)
 
       if (currentId) {
         query = query.neq('id', currentId)
@@ -51,63 +53,74 @@ export default function SlugInput({ value, onChange, currentId, label = "URL Slu
         console.error('Slug check error:', error)
         setIsValid(false)
         setErrorMessage('Kontrol edilirken hata oluştu')
-        onChange(slug, false)
+        // Parent needs to know validation failed
+        onChange(inputValue, false)
       } else if (data) {
         setIsValid(false)
         setErrorMessage('Bu slug kullanımda')
-        onChange(slug, false)
+        onChange(inputValue, false)
       } else {
         setIsValid(true)
         setErrorMessage('')
-        onChange(slug, true)
+        // Parent needs to know validation passed
+        onChange(inputValue, true)
       }
     } catch (err) {
       console.error(err)
       setIsValid(false)
-      onChange(slug, false)
+      onChange(inputValue, false)
     } finally {
       setIsLoading(false)
     }
-  }, [currentId, onChange])
-
-  useEffect(() => {
-    checkAvailability(debouncedValue)
-  }, [debouncedValue, checkAvailability])
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = slugify(e.target.value)
     setInputValue(newValue)
-    // Temporarily invalid until check completes
+    setIsValid(null) // Reset validation status on change
+    setErrorMessage('')
+    // Propagate change but mark as invalid/unchecked until button is clicked
+    // OR we can pass true if we trust the user, but requirements say validation is needed.
+    // Better to pass 'false' for isValid so the parent form can block submit if it wants strict validation.
     onChange(newValue, false)
   }
 
   return (
     <div className="space-y-2">
       <Label htmlFor="slug-input">{label} *</Label>
-      <div className="relative">
-        <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-500">veraqr.com/</span>
-            <Input
-            id="slug-input"
-            value={inputValue}
-            onChange={handleChange}
-            placeholder="ornek-restoran"
-            className={`pr-10 ${
-                isValid === true ? 'border-green-500 focus-visible:ring-green-500' :
-                isValid === false ? 'border-red-500 focus-visible:ring-red-500' : ''
-            }`}
-            disabled={disabled}
-            />
+      <div className="flex items-end gap-2">
+        <div className="relative flex-1">
+            <div className="flex items-center gap-2">
+                <span className="text-sm text-slate-500 whitespace-nowrap">veraqr.com/</span>
+                <Input
+                    id="slug-input"
+                    value={inputValue}
+                    onChange={handleChange}
+                    placeholder="ornek-restoran"
+                    className={`pr-10 ${
+                        isValid === true ? 'border-green-500 focus-visible:ring-green-500' :
+                        isValid === false ? 'border-red-500 focus-visible:ring-red-500' : ''
+                    }`}
+                    disabled={disabled}
+                />
+            </div>
+            <div className="absolute right-3 top-2.5">
+                {isValid === true ? (
+                    <Check className="h-5 w-5 text-green-500" />
+                ) : isValid === false ? (
+                    <X className="h-5 w-5 text-red-500" />
+                ) : null}
+            </div>
         </div>
-        <div className="absolute right-3 top-2.5">
-          {isLoading ? (
-            <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
-          ) : isValid === true ? (
-            <Check className="h-5 w-5 text-green-500" />
-          ) : isValid === false ? (
-            <X className="h-5 w-5 text-red-500" />
-          ) : null}
-        </div>
+        <Button
+            type="button"
+            variant="outline"
+            onClick={checkAvailability}
+            disabled={disabled || isLoading || !inputValue}
+        >
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4 mr-2" />}
+            Kontrol Et
+        </Button>
       </div>
       {errorMessage && (
         <p className="text-sm text-red-500 mt-1">{errorMessage}</p>
