@@ -209,24 +209,24 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t bg-white">
+      <footer className="border-t bg-white dark:bg-gray-900 dark:border-gray-700">
         <div className="container mx-auto px-4 py-8">
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <QrCode className="h-6 w-6" />
-                <span className="font-bold">VERAQR</span>
+                <QrCode className="h-6 w-6 dark:text-white" />
+                <span className="font-bold dark:text-white">VERAQR</span>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground dark:text-gray-400">
                 AI destekli QR menü sistemi ile restoranınızı dijitalleştirin
               </p>
             </div>
             <div>
-              <h4 className="font-semibold mb-4">Ürün</h4>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><Link href="#features">Özellikler</Link></li>
-                <li><Link href="#pricing">Fiyatlandırma</Link></li>
-                <li><Link href="/docs">Dokümantasyon</Link></li>
+              <h4 className="font-semibold mb-4 dark:text-white">Ürün</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground dark:text-gray-400">
+                <li><Link href="#features" className="hover:text-primary">Özellikler</Link></li>
+                <li><Link href="#pricing" className="hover:text-primary">Fiyatlandırma</Link></li>
+                <li><Link href="/docs" className="hover:text-primary">Dokümantasyon</Link></li>
               </ul>
             </div>
             <div>
