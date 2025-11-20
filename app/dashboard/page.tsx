@@ -16,24 +16,24 @@ export default async function RestaurantDashboard() {
     { data: todayRevenue },
     { count: pendingOrders },
   ] = await Promise.all([
-    supabase
+    (supabase
       .from('orders')
       .select('*', { count: 'exact', head: true })
-      .eq('organization_id', adminInfo?.organization_id)
-      .gte('created_at', today.toISOString()),
-    supabase
+      .eq('restaurant_id', adminInfo?.restaurant_id)
+      .gte('created_at', today.toISOString()) as any),
+    (supabase
       .from('orders')
       .select('total_amount')
-      .eq('organization_id', adminInfo?.organization_id)
-      .gte('created_at', today.toISOString()),
-    supabase
+      .eq('restaurant_id', adminInfo?.restaurant_id)
+      .gte('created_at', today.toISOString()) as any),
+    (supabase
       .from('orders')
       .select('*', { count: 'exact', head: true })
-      .eq('organization_id', adminInfo?.organization_id)
-      .in('status', ['pending', 'preparing']),
+      .eq('restaurant_id', adminInfo?.restaurant_id)
+      .in('status', ['pending', 'preparing']) as any),
   ])
 
-  const totalRevenue = todayRevenue?.reduce((sum, order) => sum + Number(order.total_amount), 0) || 0
+  const totalRevenue = todayRevenue?.reduce((sum: number, order: any) => sum + Number(order.total_amount), 0) || 0
 
   const stats = [
     {
@@ -71,7 +71,7 @@ export default async function RestaurantDashboard() {
       <div>
         <h1 className="text-3xl font-bold">Dashboard</h1>
         <p className="text-slate-600 mt-1">
-          {adminInfo?.organization?.name} - Anlık İstatistikler
+          {(adminInfo as any)?.restaurant?.name} - Anlık İstatistikler
         </p>
       </div>
 

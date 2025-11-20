@@ -104,10 +104,10 @@ export default function NewOrganizationForm() {
     try {
       // Check if slug is available
       const { data: existing } = await supabase
-        .from('organizations')
+        .from('restaurants')
         .select('id')
         .eq('slug', formData.slug)
-        .single()
+        .maybeSingle()
 
       if (existing) {
         toast({
@@ -119,53 +119,68 @@ export default function NewOrganizationForm() {
         return
       }
 
-      // Create organization
-      const { data: organization, error: orgError } = await (supabase
-        .from('organizations')
+      // Create restaurant
+      const { data: restaurant, error: restaurantError } = await (supabase
+        .from('restaurants')
         .insert({
           name: formData.name,
           slug: formData.slug,
           description: formData.description,
           address: formData.address,
-          brand_color: formData.brand_color,
+          primary_color: formData.brand_color,
           working_hours: formData.working_hours,
           status: 'active',
+          subscription_tier: 'starter',
         } as any)
         .select()
         .single() as any)
 
-      if (orgError) throw orgError
+      if (restaurantError) throw restaurantError
 
       // Upload logo if provided
-      if (logoFile && organization) {
-        const logoUrl = await uploadLogo((organization as any).id)
+      if (logoFile && restaurant) {
+        const logoUrl = await uploadLogo(restaurant.id)
         if (logoUrl) {
           await (supabase
-            .from('organizations') as any)
+            .from('restaurants') as any)
             .update({ logo_url: logoUrl })
-            .eq('id', (organization as any).id)
+            .eq('id', restaurant.id)
         }
       }
 
-      // Create organization settings
-      await (supabase.from('organization_settings') as any).insert({
-        organization_id: (organization as any).id,
-        ai_personality: formData.ai_personality,
-        openai_api_key: formData.openai_api_key || null,
-        ai_auto_translate: true,
-        enable_table_call: true,
-        enable_reviews: true,
-      })
+      // Create AI config
+      await (supabase.from('ai_configs').insert({
+        restaurant_id: restaurant.id,
+        personality: formData.ai_personality,
+        custom_prompt: `Sen ${formData.name}'nin AI asistanısın. Müşterilere yardımcı ol, menü hakkında bilgi ver ve sipariş almalarına yardım et.`,
+        language: 'tr',
+        auto_translate: true,
+        model: 'gpt-4',
+      } as any) as any)
 
       // Create default categories
       const categoryPromises = formData.categories.map((categoryName, index) =>
-        (supabase.from('menu_categories') as any).insert({
-          organization_id: (organization as any).id,
+        (supabase.from('categories').insert({
+          restaurant_id: restaurant.id,
           name: categoryName,
           display_order: index,
-        })
+          visible: true,
+        } as any) as any)
       )
       await Promise.all(categoryPromises)
+
+      // Create default QR codes (10 tables)
+      const qrCodePromises = Array.from({ length: 10 }, (_, i) => {
+        const tableNumber = `Masa ${i + 1}`
+        return (supabase.from('qr_codes').insert({
+          restaurant_id: restaurant.id,
+          table_number: tableNumber,
+          qr_code_hash: `${formData.slug}-${tableNumber.toLowerCase().replace(' ', '-')}-${Date.now()}`,
+          location_description: i < 5 ? 'Ana Salon' : i < 8 ? 'Teras' : 'Özel Oda',
+          status: 'active',
+        } as any) as any)
+      })
+      await Promise.all(qrCodePromises)
 
       toast({
         title: 'Başarılı!',

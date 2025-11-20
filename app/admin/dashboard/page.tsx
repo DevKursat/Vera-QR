@@ -6,19 +6,19 @@ export default async function AdminDashboard() {
   const supabase = createClient()
   // Fetch statistics
   const [
-    { count: organizationsCount },
+    { count: restaurantsCount },
     { count: usersCount },
     { count: ordersCount },
   ] = await Promise.all([
-    supabase.from('organizations').select('*', { count: 'exact', head: true }),
-    supabase.from('admin_users').select('*', { count: 'exact', head: true }),
-    supabase.from('orders').select('*', { count: 'exact', head: true }),
+    (supabase.from('restaurants').select('*', { count: 'exact', head: true }) as any),
+    (supabase.from('profiles').select('*', { count: 'exact', head: true }) as any),
+    (supabase.from('orders').select('*', { count: 'exact', head: true }) as any),
   ])
 
   const stats = [
     {
       title: 'Toplam İşletme',
-      value: organizationsCount || 0,
+      value: restaurantsCount || 0,
       icon: Store,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
