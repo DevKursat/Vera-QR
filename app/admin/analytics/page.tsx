@@ -14,8 +14,8 @@ export default async function AdminAnalyticsPage() {
   let userCount = 0
   let orderCount = 0
   let totalRevenue = 0
-  let last30Days = []
-  let statusData = []
+  let last30Days: { date: string; fullDate: string; total: number }[] = []
+  let statusData: { name: string; value: number }[] = []
 
   try {
     // 1. Fetch Counts
