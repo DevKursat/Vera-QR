@@ -1,4 +1,5 @@
 // import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
@@ -6,25 +7,15 @@ import EditRestaurantForm from '@/components/admin/restaurants/edit-restaurant-f
 import { notFound } from 'next/navigation'
 
 export default async function EditRestaurantPage({ params }: { params: { id: string } }) {
-  // const supabase = createClient()
+  const supabase = createClient()
 
-  // const { data: restaurant, error } = await supabase
-  //   .from('restaurants')
-  //   .select('*')
-  //   .eq('id', params.id)
-  //   .single()
+  const { data: restaurant, error } = await supabase
+    .from('restaurants')
+    .select('*')
+    .eq('id', params.id)
+    .single()
 
-  const restaurant = {
-    id: params.id,
-    name: 'Test Restaurant',
-    slug: 'test-restaurant',
-    status: 'active',
-    subscription_tier: 'pro',
-    description: 'A nice test restaurant',
-    address: 'Istanbul, Turkey'
-  }
-
-  if (!restaurant) {
+  if (error || !restaurant) {
     notFound()
   }
 
