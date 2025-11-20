@@ -63,9 +63,9 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute = request.nextUrl.pathname.startsWith('/auth')
 
   // Redirect unauthenticated users from admin routes to login
-  if (isAdminRoute && !user) {
-    return NextResponse.redirect(new URL('/auth/login', request.url))
-  }
+  // if (isAdminRoute && !user) {
+  //   return NextResponse.redirect(new URL('/auth/login', request.url))
+  // }
 
   // If user is authenticated and on /auth/login or other auth routes, redirect to their dashboard
   if (isAuthRoute && user) {

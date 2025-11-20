@@ -5,75 +5,91 @@ import OverviewCharts from '@/components/admin/analytics/overview-charts'
 import { format, subDays } from 'date-fns'
 import { tr } from 'date-fns/locale'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminAnalyticsPage() {
   const supabase = createClient()
 
-  // 1. Fetch Counts
-  const { count: restaurantCount } = await supabase
-    .from('restaurants')
-    .select('*', { count: 'exact', head: true })
+  let restaurantCount = 0
+  let userCount = 0
+  let orderCount = 0
+  let totalRevenue = 0
+  let last30Days = []
+  let statusData = []
 
-  const { count: userCount } = await supabase
-    .from('profiles')
-    .select('*', { count: 'exact', head: true })
+  try {
+    // 1. Fetch Counts
+    const { count: rCount } = await supabase
+      .from('restaurants')
+      .select('*', { count: 'exact', head: true })
+    restaurantCount = rCount || 0
 
-  const { count: orderCount } = await supabase
-    .from('orders')
-    .select('*', { count: 'exact', head: true })
+    const { count: uCount } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+    userCount = uCount || 0
 
-  // 2. Fetch Total Revenue (Paid orders)
-  const { data: paidOrders } = await supabase
-    .from('orders')
-    .select('total_amount, created_at')
-    .eq('payment_status', 'paid')
+    const { count: oCount } = await supabase
+      .from('orders')
+      .select('*', { count: 'exact', head: true })
+    orderCount = oCount || 0
 
-  const totalRevenue = paidOrders?.reduce((sum, order) => sum + Number(order.total_amount), 0) || 0
+    // 2. Fetch Total Revenue (Paid orders)
+    const { data: paidOrders } = await supabase
+      .from('orders')
+      .select('total_amount, created_at')
+      .eq('payment_status', 'paid')
 
-  // 3. Prepare Chart Data (Last 30 days revenue)
-  const last30Days = Array.from({ length: 30 }, (_, i) => {
-    const d = subDays(new Date(), 29 - i)
-    return {
-      date: format(d, 'd MMM', { locale: tr }),
-      fullDate: format(d, 'yyyy-MM-dd'),
-      total: 0
-    }
-  })
+    totalRevenue = paidOrders?.reduce((sum, order) => sum + Number(order.total_amount), 0) || 0
 
-  paidOrders?.forEach(order => {
-    const orderDate = format(new Date(order.created_at), 'yyyy-MM-dd')
-    const day = last30Days.find(d => d.fullDate === orderDate)
-    if (day) {
-      day.total += Number(order.total_amount)
-    }
-  })
+    // 3. Prepare Chart Data (Last 30 days revenue)
+    last30Days = Array.from({ length: 30 }, (_, i) => {
+      const d = subDays(new Date(), 29 - i)
+      return {
+        date: format(d, 'd MMM', { locale: tr }),
+        fullDate: format(d, 'yyyy-MM-dd'),
+        total: 0
+      }
+    })
 
-  // 4. Fetch Order Status Distribution
-  const { data: ordersStatus } = await supabase
-    .from('orders')
-    .select('status')
+    paidOrders?.forEach(order => {
+      const orderDate = format(new Date(order.created_at), 'yyyy-MM-dd')
+      const day = last30Days.find(d => d.fullDate === orderDate)
+      if (day) {
+        day.total += Number(order.total_amount)
+      }
+    })
 
-  const statusCounts: Record<string, number> = {}
-  ordersStatus?.forEach(o => {
-    const s = o.status || 'unknown'
-    statusCounts[s] = (statusCounts[s] || 0) + 1
-  })
+    // 4. Fetch Order Status Distribution
+    const { data: ordersStatus } = await supabase
+      .from('orders')
+      .select('status')
 
-  const statusData = Object.entries(statusCounts).map(([name, value]) => {
-    let label = name
-    switch (name) {
-      case 'pending': label = 'Beklemede'; break;
-      case 'preparing': label = 'Hazırlanıyor'; break;
-      case 'ready': label = 'Hazır'; break;
-      case 'served': label = 'Servis Edildi'; break;
-      case 'cancelled': label = 'İptal'; break;
-      case 'paid': label = 'Ödendi'; break;
-      case 'completed': label = 'Tamamlandı'; break;
-    }
-    return {
-      name: label,
-      value
-    }
-  })
+    const statusCounts: Record<string, number> = {}
+    ordersStatus?.forEach(o => {
+      const s = o.status || 'unknown'
+      statusCounts[s] = (statusCounts[s] || 0) + 1
+    })
+
+    statusData = Object.entries(statusCounts).map(([name, value]) => {
+      let label = name
+      switch (name) {
+        case 'pending': label = 'Beklemede'; break;
+        case 'preparing': label = 'Hazırlanıyor'; break;
+        case 'ready': label = 'Hazır'; break;
+        case 'served': label = 'Servis Edildi'; break;
+        case 'cancelled': label = 'İptal'; break;
+        case 'paid': label = 'Ödendi'; break;
+        case 'completed': label = 'Tamamlandı'; break;
+      }
+      return {
+        name: label,
+        value
+      }
+    })
+  } catch (e) {
+    console.error('Analytics fetch error:', e)
+  }
 
   return (
     <div className="space-y-6">

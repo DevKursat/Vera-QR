@@ -92,7 +92,7 @@ export default function RestaurantsList({ restaurants }: Props) {
                 </div>
               </TableCell>
               <TableCell>
-                <code className="text-sm bg-slate-100 dark:bg-slate-800 dark:text-slate-200 px-2 py-1 rounded">
+                <code className="text-sm bg-slate-100 dark:bg-slate-700 dark:text-white px-2 py-1 rounded">
                   /{restaurant.slug}
                 </code>
               </TableCell>

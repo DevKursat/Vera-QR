@@ -1,17 +1,12 @@
 import SettingsForm from '@/components/admin/settings-form'
 import { createClient } from '@/lib/supabase/server'
 
+export const dynamic = 'force-dynamic'
+
 export default async function AdminSettingsPage() {
   const supabase = createClient()
 
-  const { data: settings } = await supabase
-    .from('platform_settings')
-    .select('*')
-    .limit(1)
-    .maybeSingle()
-
-  // Default values if no settings found
-  const initialData = settings || {
+  let initialData = {
     site_name: 'Vera QR',
     support_email: 'support@veraqr.com',
     default_language: 'tr',
@@ -20,6 +15,22 @@ export default async function AdminSettingsPage() {
     session_timeout_minutes: 60,
     email_notifications_enabled: true,
     system_notifications_enabled: true
+  }
+
+  try {
+    const { data: settings, error } = await supabase
+      .from('platform_settings')
+      .select('*')
+      .limit(1)
+      .maybeSingle()
+
+    if (error) {
+      console.error('Error fetching settings:', error)
+    } else if (settings) {
+      initialData = settings
+    }
+  } catch (e) {
+    console.error('Unexpected error fetching settings:', e)
   }
 
   return (
