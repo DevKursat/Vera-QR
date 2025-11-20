@@ -1,6 +1,7 @@
 import { getRestaurantAdminInfo } from '@/lib/supabase/auth'
 import { redirect } from 'next/navigation'
 import ReviewsManagement from '@/components/restaurant/reviews-management'
+import PageHeader from '@/components/restaurant/page-header'
 
 export default async function ReviewsPage() {
   const adminInfo = await getRestaurantAdminInfo()
@@ -11,12 +12,10 @@ export default async function ReviewsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Müşteri Yorumları</h1>
-        <p className="text-muted-foreground mt-2">
-          Müşteri yorumlarını görüntüleyin ve yanıtlayın
-        </p>
-      </div>
+      <PageHeader
+        titleKey="pages.reviews.title"
+        descriptionKey="pages.reviews.description"
+      />
 
       <ReviewsManagement organizationId={adminInfo.organization_id} />
     </div>

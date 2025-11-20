@@ -111,6 +111,29 @@ export const translations = {
       download: 'İndir',
       preparing: 'Hazırlanıyor...',
     },
+    // Pages
+    pages: {
+      coupons: {
+        title: 'Kupon Yönetimi',
+        description: 'İndirim kuponları oluşturun ve yönetin',
+      },
+      loyalty: {
+        title: 'Sadakat Programı',
+        description: 'Müşteri sadakat puanlarını yönetin',
+      },
+      reviews: {
+        title: 'Müşteri Yorumları',
+        description: 'Müşteri yorumlarını görüntüleyin ve yanıtlayın',
+      },
+      calls: {
+        title: 'Çağrı İstekleri',
+        description: 'Müşteri çağrı isteklerini yönetin',
+      },
+      customers: {
+        title: 'Müşteriler',
+        description: 'Sadakat programına kayıtlı müşterileri görüntüleyin',
+      },
+    },
     // Admin
     admin: {
       platformManagement: 'Platform Yönetimi',
@@ -247,6 +270,29 @@ export const translations = {
       addTable: 'Add Table',
       download: 'Download',
       preparing: 'Preparing...',
+    },
+    // Pages
+    pages: {
+      coupons: {
+        title: 'Coupon Management',
+        description: 'Create and manage discount coupons',
+      },
+      loyalty: {
+        title: 'Loyalty Program',
+        description: 'Manage customer loyalty points',
+      },
+      reviews: {
+        title: 'Customer Reviews',
+        description: 'View and reply to customer reviews',
+      },
+      calls: {
+        title: 'Call Requests',
+        description: 'Manage customer call requests',
+      },
+      customers: {
+        title: 'Customers',
+        description: 'View customers registered in the loyalty program',
+      },
     },
     // Admin
     admin: {

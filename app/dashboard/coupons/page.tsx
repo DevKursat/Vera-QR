@@ -1,6 +1,7 @@
 import { getRestaurantAdminInfo } from '@/lib/supabase/auth'
 import { redirect } from 'next/navigation'
 import CouponManagement from '@/components/restaurant/coupon-management'
+import PageHeader from '@/components/restaurant/page-header'
 
 export default async function CouponsPage() {
   const adminInfo = await getRestaurantAdminInfo()
@@ -11,12 +12,10 @@ export default async function CouponsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Kupon Yönetimi</h1>
-        <p className="text-muted-foreground mt-2">
-          İndirim kuponları oluşturun ve yönetin
-        </p>
-      </div>
+      <PageHeader
+        titleKey="pages.coupons.title"
+        descriptionKey="pages.coupons.description"
+      />
 
       <CouponManagement organizationId={adminInfo.organization_id} />
     </div>

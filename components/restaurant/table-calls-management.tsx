@@ -12,7 +12,7 @@ import { Bell, CheckCircle, XCircle } from 'lucide-react'
 
 interface TableCall {
   id: string
-  table: { table_number: string; location_description: string }
+  table_number: string
   call_type: string
   status: string
   customer_note: string | null
@@ -44,13 +44,13 @@ export default function TableCallsManagement({ initialCalls, organizationId }: P
           event: '*',
           schema: 'public',
           table: 'table_calls',
-          filter: `organization_id=eq.${organizationId}`,
+          filter: `restaurant_id=eq.${organizationId}`,
         },
         async (payload) => {
           if (payload.eventType === 'INSERT') {
             const { data } = await supabase
               .from('table_calls')
-              .select('*, table:tables(table_number, location_description)')
+              .select('*')
               .eq('id', payload.new.id)
               .single()
 
@@ -125,13 +125,8 @@ export default function TableCallsManagement({ initialCalls, organizationId }: P
                       <div>
                         <CardTitle className="text-lg flex items-center gap-2">
                           <Bell className="h-5 w-5" />
-                          Masa {call.table.table_number}
+                          Masa {call.table_number}
                         </CardTitle>
-                        {call.table.location_description && (
-                          <p className="text-sm text-slate-600 mt-1">
-                            {call.table.location_description}
-                          </p>
-                        )}
                       </div>
                       <Badge>{CALL_TYPES[call.call_type as keyof typeof CALL_TYPES]}</Badge>
                     </div>

@@ -18,17 +18,31 @@ export async function POST(request: NextRequest) {
 
     const supabase = createClient()
 
+    // Get table info
+    const { data: qrCode } = await supabase
+      .from('qr_codes')
+      .select('table_number, location_description')
+      .eq('id', table_id) // Assuming table_id passed from frontend is actually qr_code_id
+      .single()
+
+    if (!qrCode) {
+      return NextResponse.json(
+        { error: 'Table not found' },
+        { status: 404 }
+      )
+    }
+
     // Create table call
     const { data: call, error } = await supabase
       .from('table_calls')
       .insert({
-        organization_id,
-        table_id,
+        restaurant_id: organization_id,
+        table_number: qrCode.table_number,
         call_type,
         customer_note,
         status: 'pending',
       })
-      .select('*, table:tables(table_number, location_description)')
+      .select()
       .maybeSingle()
 
     if (error || !call) {
@@ -82,8 +96,8 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('table_calls')
-      .select('*, table:tables(table_number, location_description)')
-      .eq('organization_id', organizationId)
+      .select('*')
+      .eq('restaurant_id', organizationId)
       .order('created_at', { ascending: false })
 
     if (status) {
