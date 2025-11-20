@@ -9,6 +9,8 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/components/ui/use-toast'
 import { Loader2, QrCode } from 'lucide-react'
+import { ThemeToggle, LanguageToggle } from '@/components/shared/theme-language-toggle'
+import { useApp } from '@/lib/app-context'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -16,6 +18,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
+  const { t } = useApp()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -24,8 +27,8 @@ export default function LoginPage() {
     if (!email || !password) {
       toast({
         variant: 'destructive',
-        title: 'Eksik Bilgi',
-        description: 'Lütfen e-posta ve şifre alanlarını doldurun.',
+        title: t.common.error,
+        description: 'Please fill in email and password fields.',
       })
       return
     }
@@ -34,8 +37,6 @@ export default function LoginPage() {
 
     try {
       console.log('🔐 Login başlatılıyor...', { email })
-      console.log('📧 Email:', email)
-      console.log('🔑 Password length:', password.length)
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -46,24 +47,11 @@ export default function LoginPage() {
 
       if (error) {
         console.error('❌ Auth hatası:', error)
-        console.error('❌ Error code:', error.status)
-        console.error('❌ Error message:', error.message)
-        
-        let errorMessage = error.message
-        
-        // Türkçe hata mesajları
-        if (error.message.includes('Invalid login credentials')) {
-          errorMessage = 'E-posta veya şifre hatalı. Lütfen tekrar deneyin.'
-        } else if (error.message.includes('Email not confirmed')) {
-          errorMessage = 'E-posta adresiniz doğrulanmamış. Lütfen e-postanızı kontrol edin.'
-        } else if (error.message.includes('User not found')) {
-          errorMessage = 'Bu e-posta adresi ile kayıtlı kullanıcı bulunamadı.'
-        }
         
         toast({
           variant: 'destructive',
-          title: 'Giriş Başarısız',
-          description: errorMessage,
+          title: t.auth.loginError,
+          description: t.auth.invalidCredentials,
         })
         setIsLoading(false)
         return
@@ -73,8 +61,8 @@ export default function LoginPage() {
         console.error('❌ Kullanıcı bulunamadı')
         toast({
           variant: 'destructive',
-          title: 'Hata',
-          description: 'Kullanıcı bilgileri alınamadı',
+          title: t.common.error,
+          description: 'User information could not be retrieved',
         })
         setIsLoading(false)
         return
@@ -110,12 +98,12 @@ export default function LoginPage() {
 
       // Check if platform admin
       if ((profile as any).role === 'platform_admin') {
-        console.log('✅ Platform admin! Dashboard\'a yönlendiriliyor...')
+        console.log('✅ Platform admin! Redirecting to /admin...')
         toast({
-          title: 'Giriş Başarılı',
-          description: 'Platform admin paneline yönlendiriliyorsunuz...',
+          title: t.auth.loginSuccess,
+          description: 'Redirecting to platform admin panel...',
         })
-        window.location.href = '/admin/dashboard'
+        window.location.href = '/admin'
         return
       }
 
@@ -133,12 +121,12 @@ export default function LoginPage() {
       }
 
       if (restaurantAdmin) {
-        console.log('✅ Restaurant admin bulundu! Dashboard\'a yönlendiriliyor...')
+        console.log('✅ Restaurant admin! Redirecting to /restaurant/dashboard...')
         toast({
-          title: 'Giriş Başarılı',
-          description: 'Restoran admin paneline yönlendiriliyorsunuz...',
+          title: t.auth.loginSuccess,
+          description: 'Redirecting to restaurant admin panel...',
         })
-        window.location.href = '/dashboard'
+        window.location.href = '/restaurant/dashboard'
         return
       }
 
@@ -146,8 +134,8 @@ export default function LoginPage() {
       console.error('❌ Hiçbir admin rolü bulunamadı!')
       toast({
         variant: 'destructive',
-        title: 'Yetkisiz Erişim',
-        description: 'Bu hesapla giriş yapamazsınız. Lütfen admin hesabınızla giriş yapın.',
+        title: t.auth.unauthorized,
+        description: t.auth.unauthorizedMessage,
       })
       await supabase.auth.signOut()
       setIsLoading(false)
@@ -155,31 +143,36 @@ export default function LoginPage() {
       console.error('❌ Beklenmeyen hata:', error)
       toast({
         variant: 'destructive',
-        title: 'Hata',
-        description: error.message || 'Bir hata oluştu',
+        title: t.common.error,
+        description: error.message || 'An error occurred',
       })
       setIsLoading(false)
     }
   }
 
   return (
-    <Card>
-      <CardHeader className="space-y-1">
-        <div className="flex justify-center mb-4">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center">
-            <QrCode className="h-8 w-8 text-white" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 p-4">
+      <div className="absolute top-4 right-4 flex gap-2">
+        <ThemeToggle />
+        <LanguageToggle />
+      </div>
+      <Card className="w-full max-w-md dark:bg-gray-800 dark:border-gray-700">
+        <CardHeader className="space-y-1">
+          <div className="flex justify-center mb-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center">
+              <QrCode className="h-8 w-8 text-white" />
+            </div>
           </div>
-        </div>
-        <CardTitle className="text-2xl text-center">VERA QR</CardTitle>
-        <CardDescription className="text-center">
-          Admin paneline giriş yapın
-        </CardDescription>
-      </CardHeader>
-      <form onSubmit={handleLogin}>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">E-posta</Label>
-            <Input
+          <CardTitle className="text-2xl text-center dark:text-white">VERA QR</CardTitle>
+          <CardDescription className="text-center dark:text-gray-300">
+            {t.auth.loginTitle}
+          </CardDescription>
+        </CardHeader>
+        <form onSubmit={handleLogin}>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="dark:text-gray-200">{t.auth.email}</Label>
+              <Input
               id="email"
               type="email"
               placeholder="admin@example.com"
@@ -187,10 +180,11 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               disabled={isLoading}
+              className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Şifre</Label>
+            <Label htmlFor="password" className="dark:text-gray-200">{t.auth.password}</Label>
             <Input
               id="password"
               type="password"
@@ -198,6 +192,7 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={isLoading}
+              className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             />
           </div>
         </CardContent>
@@ -210,14 +205,15 @@ export default function LoginPage() {
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Giriş yapılıyor...
+                {t.auth.loggingIn}
               </>
             ) : (
-              'Giriş Yap'
+              t.common.login
             )}
           </Button>
         </CardFooter>
       </form>
     </Card>
+    </div>
   )
 }

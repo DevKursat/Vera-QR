@@ -146,8 +146,8 @@ CREATE TABLE restaurant_admins (
 CREATE TABLE categories (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL,
-    name_translations JSONB DEFAULT '{}'::jsonb,
+    name_tr VARCHAR(255) NOT NULL,
+    name_en VARCHAR(255),
     description TEXT,
     display_order INTEGER DEFAULT 0,
     visible BOOLEAN DEFAULT true,
@@ -160,10 +160,10 @@ CREATE TABLE products (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
     category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
-    name VARCHAR(255) NOT NULL,
-    name_translations JSONB DEFAULT '{}'::jsonb,
-    description TEXT,
-    description_translations JSONB DEFAULT '{}'::jsonb,
+    name_tr VARCHAR(255) NOT NULL,
+    name_en VARCHAR(255),
+    description_tr TEXT,
+    description_en TEXT,
     price DECIMAL(10,2) NOT NULL,
     image_url TEXT,
     allergens TEXT[] DEFAULT ARRAY[]::TEXT[],
@@ -180,6 +180,8 @@ CREATE TABLE ai_configs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     restaurant_id UUID UNIQUE NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
     personality VARCHAR(50) DEFAULT 'professional' CHECK (personality IN ('friendly', 'professional', 'fun', 'formal', 'casual')),
+    welcome_message_tr TEXT,
+    welcome_message_en TEXT,
     custom_prompt TEXT,
     language VARCHAR(10) DEFAULT 'tr',
     auto_translate BOOLEAN DEFAULT true,
@@ -802,45 +804,49 @@ VALUES (
 ON CONFLICT (id) DO NOTHING;
 
 -- Test kategorileri
-INSERT INTO categories (restaurant_id, name, display_order)
+INSERT INTO categories (restaurant_id, name_tr, name_en, display_order)
 VALUES
-    ('10000000-0000-0000-0000-000000000001', 'Kahve', 1),
-    ('10000000-0000-0000-0000-000000000001', 'Tatlılar', 2),
-    ('10000000-0000-0000-0000-000000000001', 'Ana Yemekler', 3),
-    ('10000000-0000-0000-0000-000000000001', 'İçecekler', 4)
+    ('10000000-0000-0000-0000-000000000001', 'Kahve', 'Coffee', 1),
+    ('10000000-0000-0000-0000-000000000001', 'Tatlılar', 'Desserts', 2),
+    ('10000000-0000-0000-0000-000000000001', 'Ana Yemekler', 'Main Courses', 3),
+    ('10000000-0000-0000-0000-000000000001', 'İçecekler', 'Beverages', 4)
 ON CONFLICT DO NOTHING;
 
 -- Test ürünleri
-INSERT INTO products (restaurant_id, category_id, name, description, price, ai_tags, is_available)
+INSERT INTO products (restaurant_id, category_id, name_tr, name_en, description_tr, description_en, price, ai_tags, is_available)
 SELECT
     '10000000-0000-0000-0000-000000000001',
     c.id,
-    item.name,
-    item.description,
+    item.name_tr,
+    item.name_en,
+    item.description_tr,
+    item.description_en,
     item.price,
     item.ai_tags,
     true
 FROM categories c
 CROSS JOIN LATERAL (
     VALUES
-        ('Espresso', 'İtalyan tarzı espresso', 25.00, ARRAY['kahve', 'espresso', 'sıcak'], 1),
-        ('Cappuccino', 'Espresso, süt köpüğü ve tarçın', 35.00, ARRAY['kahve', 'süt', 'sıcak', 'cappuccino'], 1),
-        ('Tiramisu', 'Klasik İtalyan kahve aromalı tatlı', 65.00, ARRAY['tatlı', 'kahve', 'mascarpone'], 2),
-        ('Panna Cotta', 'Kremalı vanilya tatlısı', 55.00, ARRAY['tatlı', 'krema', 'vanilya'], 2),
-        ('Margherita Pizza', 'Domates sosu, mozzarella ve fesleğen', 95.00, ARRAY['pizza', 'mozzarella', 'domates', 'ana yemek'], 3),
-        ('Spaghetti Carbonara', 'Yumurta, peynir ve guanciale ile klasik Roma makarnası', 85.00, ARRAY['makarna', 'yumurta', 'peynir', 'ana yemek'], 3),
-        ('Limonata', 'Taze sıkılmış limon suyu', 30.00, ARRAY['içecek', 'limon', 'serinletici', 'soğuk'], 4),
-        ('Su', 'Şişe su', 10.00, ARRAY['su', 'içecek'], 4)
-) AS item(name, description, price, ai_tags, category_order)
+        ('Espresso', 'Espresso', 'İtalyan tarzı espresso', 'Italian style espresso', 25.00, ARRAY['kahve', 'espresso', 'sıcak'], 1),
+        ('Cappuccino', 'Cappuccino', 'Espresso, süt köpüğü ve tarçın', 'Espresso with milk foam and cinnamon', 35.00, ARRAY['kahve', 'süt', 'sıcak'], 1),
+        ('Tiramisu', 'Tiramisu', 'Klasik İtalyan kahve aromalı tatlı', 'Classic Italian coffee-flavored dessert', 65.00, ARRAY['tatlı', 'kahve', 'mascarpone'], 2),
+        ('Panna Cotta', 'Panna Cotta', 'Kremalı vanilya tatlısı', 'Creamy vanilla pudding', 55.00, ARRAY['tatlı', 'krema', 'vanilya'], 2),
+        ('Margherita Pizza', 'Margherita Pizza', 'Domates sosu, mozzarella ve fesleğen', 'Tomato sauce, mozzarella and basil', 95.00, ARRAY['pizza', 'mozzarella', 'domates'], 3),
+        ('Spaghetti Carbonara', 'Spaghetti Carbonara', 'Yumurta, peynir ve guanciale ile klasik Roma makarnası', 'Classic Roman pasta with eggs, cheese and guanciale', 85.00, ARRAY['makarna', 'yumurta', 'peynir'], 3),
+        ('Limonata', 'Lemonade', 'Taze sıkılmış limon suyu', 'Freshly squeezed lemon juice', 30.00, ARRAY['içecek', 'limon', 'serinletici'], 4),
+        ('Su', 'Water', 'Şişe su', 'Bottled water', 10.00, ARRAY['su', 'içecek'], 4)
+) AS item(name_tr, name_en, description_tr, description_en, price, ai_tags, category_order)
 WHERE c.restaurant_id = '10000000-0000-0000-0000-000000000001'
     AND c.display_order = item.category_order
 ON CONFLICT DO NOTHING;
 
 -- AI Config
-INSERT INTO ai_configs (restaurant_id, personality, custom_prompt, language)
+INSERT INTO ai_configs (restaurant_id, personality, welcome_message_tr, welcome_message_en, custom_prompt, language)
 VALUES (
     '10000000-0000-0000-0000-000000000001',
     'professional',
+    'Bella Italia Ristorante''ye hoş geldiniz! Size nasıl yardımcı olabilirim?',
+    'Welcome to Bella Italia Ristorante! How can I help you?',
     'Sen Bella Italia Ristorante''nin AI asistanısın. Müşterilere yardımcı ol, menü hakkında bilgi ver ve sipariş almalarına yardım et.',
     'tr'
 )

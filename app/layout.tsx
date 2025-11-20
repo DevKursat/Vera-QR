@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
+import { AppProvider } from '@/lib/app-context'
 
 export const metadata: Metadata = {
   title: 'VERAQR | AI-Powered QR Menu System',
@@ -14,10 +15,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="tr">
-      <body className="font-sans antialiased">
-        {children}
-        <Toaster />
+    <html lang="tr" suppressHydrationWarning>
+      <body className="font-sans antialiased bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
+        <AppProvider>
+          {children}
+          <Toaster />
+        </AppProvider>
       </body>
     </html>
   )
