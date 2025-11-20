@@ -15,6 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Bell, LogOut, User } from 'lucide-react'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { LanguageToggle } from '@/components/language-toggle'
 
 export default function AdminHeader() {
   const [user, setUser] = useState<any>(null)
@@ -47,6 +48,7 @@ export default function AdminHeader() {
       
       <div className="flex items-center gap-4">
         <ThemeToggle />
+        <LanguageToggle />
         {/* Notifications */}
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
