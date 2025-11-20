@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -34,6 +34,28 @@ export default function ReviewsManagement({ organizationId }: Props) {
   const [isResponding, setIsResponding] = useState(false)
   const { toast } = useToast()
 
+  const fetchReviews = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setReviews(data || [])
+    } catch (error) {
+      console.error('Error fetching reviews:', error)
+      toast({
+        title: 'Hata',
+        description: 'Yorumlar yüklenemedi',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }, [organizationId, toast])
+
   useEffect(() => {
     fetchReviews()
 
@@ -57,29 +79,7 @@ export default function ReviewsManagement({ organizationId }: Props) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [organizationId])
-
-  const fetchReviews = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('reviews')
-        .select('*')
-        .eq('organization_id', organizationId)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      setReviews(data || [])
-    } catch (error) {
-      console.error('Error fetching reviews:', error)
-      toast({
-        title: 'Hata',
-        description: 'Yorumlar yüklenemedi',
-        variant: 'destructive',
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  }, [organizationId, fetchReviews])
 
   const handleResponse = async (reviewId: string) => {
     if (!responseText.trim()) {

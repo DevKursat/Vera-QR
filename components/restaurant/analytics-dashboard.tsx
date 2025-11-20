@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/components/ui/use-toast'
@@ -44,11 +44,7 @@ export default function AnalyticsDashboard({ organizationId, dateRange }: Props)
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
 
-  useEffect(() => {
-    fetchAnalytics()
-  }, [organizationId, dateRange])
-
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       // Get date range
       const from = dateRange?.from || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
@@ -175,7 +171,11 @@ export default function AnalyticsDashboard({ organizationId, dateRange }: Props)
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [organizationId, dateRange, toast])
+
+  useEffect(() => {
+    fetchAnalytics()
+  }, [organizationId, dateRange, fetchAnalytics])
 
   if (isLoading) {
     return (

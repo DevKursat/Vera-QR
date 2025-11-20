@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -48,11 +48,7 @@ export default function LoyaltyManagement({ organizationId }: Props) {
   const [description, setDescription] = useState('')
   const { toast } = useToast()
 
-  useEffect(() => {
-    fetchData()
-  }, [organizationId])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       // Fetch customers with loyalty points
       const { data: customersData, error: customersError } = await supabase
@@ -101,7 +97,11 @@ export default function LoyaltyManagement({ organizationId }: Props) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [organizationId, toast])
+
+  useEffect(() => {
+    fetchData()
+  }, [organizationId, fetchData])
 
   const handleAddPoints = async () => {
     if (!selectedCustomer || !pointsToAdd) {

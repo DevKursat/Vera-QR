@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -48,11 +48,7 @@ export default function CouponManagement({ organizationId }: Props) {
   })
   const { toast } = useToast()
 
-  useEffect(() => {
-    fetchCoupons()
-  }, [organizationId])
-
-  const fetchCoupons = async () => {
+  const fetchCoupons = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('coupons')
@@ -72,7 +68,11 @@ export default function CouponManagement({ organizationId }: Props) {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [organizationId, toast])
+
+  useEffect(() => {
+    fetchCoupons()
+  }, [organizationId, fetchCoupons])
 
   const generateCouponCode = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'

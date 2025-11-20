@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { Input } from '@/components/ui/input'
 import { MapPin } from 'lucide-react'
 
@@ -19,6 +19,35 @@ export default function GooglePlacesAutocomplete({
 }: GooglePlacesAutocompleteProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isLoaded, setIsLoaded] = useState(false)
+
+  const initAutocomplete = useCallback(() => {
+    if (!inputRef.current || !(window as any).google?.maps?.places) return
+
+    const autocomplete = new (window as any).google.maps.places.Autocomplete(
+      inputRef.current,
+      {
+        componentRestrictions: { country: 'tr' },
+        fields: ['formatted_address', 'geometry', 'name', 'address_components'],
+        types: ['establishment', 'geocode'],
+      }
+    )
+
+    autocomplete.addListener('place_changed', () => {
+      const place = autocomplete.getPlace()
+      
+      if (!place.formatted_address) return
+
+      const addressData = {
+        formatted_address: place.formatted_address,
+        name: place.name,
+        lat: place.geometry?.location?.lat(),
+        lng: place.geometry?.location?.lng(),
+        address_components: place.address_components,
+      }
+
+      onChange(place.formatted_address, addressData)
+    })
+  }, [onChange])
 
   useEffect(() => {
     // Check if Google Maps is already loaded
@@ -54,36 +83,7 @@ export default function GooglePlacesAutocomplete({
         document.body.removeChild(script)
       }
     }
-  }, [])
-
-  const initAutocomplete = () => {
-    if (!inputRef.current || !(window as any).google?.maps?.places) return
-
-    const autocomplete = new (window as any).google.maps.places.Autocomplete(
-      inputRef.current,
-      {
-        componentRestrictions: { country: 'tr' },
-        fields: ['formatted_address', 'geometry', 'name', 'address_components'],
-        types: ['establishment', 'geocode'],
-      }
-    )
-
-    autocomplete.addListener('place_changed', () => {
-      const place = autocomplete.getPlace()
-      
-      if (!place.formatted_address) return
-
-      const addressData = {
-        formatted_address: place.formatted_address,
-        name: place.name,
-        lat: place.geometry?.location?.lat(),
-        lng: place.geometry?.location?.lng(),
-        address_components: place.address_components,
-      }
-
-      onChange(place.formatted_address, addressData)
-    })
-  }
+  }, [initAutocomplete])
 
   return (
     <div className="relative">
