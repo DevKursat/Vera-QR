@@ -1,11 +1,11 @@
 import { getRestaurantAdminInfo } from '@/lib/supabase/auth'
 import { redirect } from 'next/navigation'
-import LoyaltyManagement from '@/components/restaurant/loyalty-management'
+import CustomersList from '@/components/restaurant/customers-list'
 import PageHeader from '@/components/restaurant/page-header'
 
-export default async function LoyaltyPage() {
+export default async function CustomersPage() {
   const adminInfo = await getRestaurantAdminInfo()
-  
+
   if (!adminInfo) {
     redirect('/auth/login')
   }
@@ -13,11 +13,11 @@ export default async function LoyaltyPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        titleKey="pages.loyalty.title"
-        descriptionKey="pages.loyalty.description"
+        titleKey="pages.customers.title"
+        descriptionKey="pages.customers.description"
       />
 
-      <LoyaltyManagement organizationId={adminInfo.organization_id} />
+      <CustomersList organizationId={adminInfo.organization_id} />
     </div>
   )
 }
