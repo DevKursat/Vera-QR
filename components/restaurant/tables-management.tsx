@@ -4,29 +4,32 @@ import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { QrCode, Download, Edit, Trash } from 'lucide-react'
+import { QrCode, Download, Edit } from 'lucide-react'
 import QRCode from 'qrcode'
+import { useApp } from '@/lib/app-context'
 
-interface Table {
+interface QrCodeItem {
   id: string
   table_number: string
-  location_description: string
+  location_description: string | null
   status: string
-  qr_code: string
+  qr_code_hash: string
 }
 
 interface Props {
-  tables: Table[]
-  organization: any
+  qrCodes: QrCodeItem[]
+  restaurant: any
 }
 
-export default function TablesManagement({ tables, organization }: Props) {
+export default function TablesManagement({ qrCodes, restaurant }: Props) {
   const [generatingQR, setGeneratingQR] = useState<string | null>(null)
+  const { t } = useApp()
 
-  const downloadQRCode = async (table: Table) => {
-    setGeneratingQR(table.id)
+  const downloadQRCode = async (qrCode: QrCodeItem) => {
+    setGeneratingQR(qrCode.id)
     try {
-      const url = `${process.env.NEXT_PUBLIC_APP_URL || 'https://veraqr.com'}/${organization.slug}?table=${table.id}`
+      // URL format: veraqr.com/slug?table=qr_hash
+      const url = `${process.env.NEXT_PUBLIC_APP_URL || 'https://veraqr.com'}/${restaurant.slug}?table=${qrCode.qr_code_hash}`
       
       const canvas = document.createElement('canvas')
       await QRCode.toCanvas(canvas, url, {
@@ -52,24 +55,24 @@ export default function TablesManagement({ tables, organization }: Props) {
       ctx.drawImage(canvas, 44, 100, 512, 512)
 
       // Title
-      ctx.fillStyle = organization.brand_color || '#000000'
+      ctx.fillStyle = restaurant.primary_color || '#000000'
       ctx.font = 'bold 32px Arial'
       ctx.textAlign = 'center'
-      ctx.fillText(organization.name, 300, 50)
+      ctx.fillText(restaurant.name, 300, 50)
 
       // Table number
       ctx.fillStyle = '#000000'
       ctx.font = 'bold 40px Arial'
-      ctx.fillText(`Masa ${table.table_number}`, 300, 650)
+      ctx.fillText(qrCode.table_number, 300, 650)
 
       // Download
       const link = document.createElement('a')
-      link.download = `Masa-${table.table_number}-QR.png`
+      link.download = `Masa-${qrCode.table_number.replace(' ', '-')}-QR.png`
       link.href = finalCanvas.toDataURL()
       link.click()
     } catch (error) {
       console.error('QR code generation error:', error)
-      alert('QR kod oluşturulurken hata oluştu')
+      alert(t.common.error)
     } finally {
       setGeneratingQR(null)
     }
@@ -77,53 +80,53 @@ export default function TablesManagement({ tables, organization }: Props) {
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
-      available: { label: 'Müsait', variant: 'default' },
-      occupied: { label: 'Dolu', variant: 'destructive' },
-      reserved: { label: 'Rezerve', variant: 'secondary' },
+      active: { label: t.orders.active, variant: 'default' },
+      inactive: { label: 'Pasif', variant: 'secondary' }, // Could add to translations if needed
+      damaged: { label: 'Hasarlı', variant: 'destructive' },
     }
-    const { label, variant } = config[status] || config.available
+    const { label, variant } = config[status] || { label: status, variant: 'secondary' }
     return <Badge variant={variant}>{label}</Badge>
   }
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {tables.length === 0 ? (
-        <Card className="col-span-full">
+      {qrCodes.length === 0 ? (
+        <Card className="col-span-full dark:bg-gray-800 dark:border-gray-700">
           <CardContent className="text-center py-12">
-            <p className="text-slate-500 mb-4">Henüz masa eklenmemiş.</p>
-            <Button>Masa Ekle</Button>
+            <p className="text-slate-500 mb-4 dark:text-slate-400">{t.tables.noTable}</p>
+            <Button>{t.tables.addTable}</Button>
           </CardContent>
         </Card>
       ) : (
-        tables.map((table) => (
-          <Card key={table.id}>
+        qrCodes.map((qrCode) => (
+          <Card key={qrCode.id} className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
               <div className="flex items-start justify-between">
-                <CardTitle>Masa {table.table_number}</CardTitle>
-                {getStatusBadge(table.status)}
+                <CardTitle className="dark:text-white">{qrCode.table_number}</CardTitle>
+                {getStatusBadge(qrCode.status)}
               </div>
-              {table.location_description && (
-                <p className="text-sm text-slate-600 mt-2">
-                  {table.location_description}
+              {qrCode.location_description && (
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
+                  {qrCode.location_description}
                 </p>
               )}
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex items-center justify-center p-4 bg-slate-50 rounded-lg">
-                <QrCode className="h-24 w-24 text-slate-400" />
+              <div className="flex items-center justify-center p-4 bg-slate-50 dark:bg-gray-700 rounded-lg">
+                <QrCode className="h-24 w-24 text-slate-400 dark:text-slate-300" />
               </div>
               <div className="flex gap-2">
                 <Button
                   size="sm"
                   variant="outline"
-                  className="flex-1"
-                  onClick={() => downloadQRCode(table)}
-                  disabled={generatingQR === table.id}
+                  className="flex-1 dark:border-gray-600 dark:text-slate-200"
+                  onClick={() => downloadQRCode(qrCode)}
+                  disabled={generatingQR === qrCode.id}
                 >
                   <Download className="h-4 w-4 mr-1" />
-                  {generatingQR === table.id ? 'Hazırlanıyor...' : 'İndir'}
+                  {generatingQR === qrCode.id ? t.tables.preparing : t.tables.download}
                 </Button>
-                <Button size="sm" variant="ghost">
+                <Button size="sm" variant="ghost" className="dark:text-slate-200">
                   <Edit className="h-4 w-4" />
                 </Button>
               </div>

@@ -8,10 +8,15 @@ export default async function OrdersPage() {
   const supabase = createClient()
   const adminInfo = await getRestaurantAdminInfo()
 
+  // Note: We don't have a table relation here anymore because 'qr_codes' is the table name
+  // and the schema defines qr_code_id.
+  // We can fetch qr_codes separately or join if needed, but for now let's just get orders.
+  // If we need table info, we'd join qr_codes on qr_code_id.
+
   const { data: orders } = await supabase
     .from('orders')
-    .select('*, table:tables(table_number, location_description)')
-    .eq('organization_id', adminInfo?.organization_id)
+    .select('*, qr_code:qr_codes(table_number, location_description)')
+    .eq('restaurant_id', adminInfo?.restaurant_id)
     .order('created_at', { ascending: false })
     .limit(100)
 
@@ -26,7 +31,7 @@ export default async function OrdersPage() {
 
       <OrdersDashboard 
         initialOrders={orders || []} 
-        organizationId={adminInfo!.organization_id}
+        restaurantId={adminInfo!.restaurant_id}
       />
     </div>
   )

@@ -67,55 +67,21 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/auth/login', request.url))
   }
 
-  // If user is authenticated and on /auth/login, redirect to their dashboard
-  if (isAuthRoute && user && request.nextUrl.pathname === '/auth/login') {
-    // Check if platform admin
-    const { data: platformAdmin } = await supabase
+  // If user is authenticated and on /auth/login or other auth routes, redirect to their dashboard
+  if (isAuthRoute && user) {
+    // Check user profile and role
+    const { data: profile } = await supabase
       .from('profiles')
-      .select('id, role')
+      .select('role')
       .eq('id', user.id)
-      .eq('role', 'platform_admin')
       .maybeSingle()
 
-    if (platformAdmin) {
-      return NextResponse.redirect(new URL('/admin/dashboard', request.url))
-    }
-
-    // Check if restaurant admin
-    const { data: restaurantAdmin } = await supabase
-      .from('restaurant_admins')
-      .select('id, restaurant_id')
-      .eq('profile_id', user.id)
-      .maybeSingle()
-
-    if (restaurantAdmin) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
-  }
-
-  // For other /auth routes, only redirect if already authenticated
-  if (isAuthRoute && user && !request.nextUrl.pathname.startsWith('/auth/login')) {
-    // Check if platform admin
-    const { data: platformAdmin } = await supabase
-      .from('profiles')
-      .select('id, role')
-      .eq('id', user.id)
-      .eq('role', 'platform_admin')
-      .maybeSingle()
-
-    if (platformAdmin) {
-      return NextResponse.redirect(new URL('/admin/dashboard', request.url))
-    }
-
-    // Check if restaurant admin
-    const { data: restaurantAdmin } = await supabase
-      .from('restaurant_admins')
-      .select('id, restaurant_id')
-      .eq('profile_id', user.id)
-      .maybeSingle()
-
-    if (restaurantAdmin) {
-      return NextResponse.redirect(new URL('/dashboard', request.url))
+    if (profile) {
+      if (profile.role === 'platform_admin') {
+        return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+      } else if (profile.role === 'restaurant_admin') {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+      }
     }
   }
 

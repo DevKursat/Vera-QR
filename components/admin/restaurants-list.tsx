@@ -1,8 +1,7 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import {
   Table,
   TableBody,
@@ -13,11 +12,11 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Edit, ExternalLink, QrCode, Trash } from 'lucide-react'
+import { Edit, ExternalLink, QrCode } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { tr } from 'date-fns/locale'
 
-interface Organization {
+interface Restaurant {
   id: string
   name: string
   slug: string
@@ -28,13 +27,11 @@ interface Organization {
 }
 
 interface Props {
-  organizations: Organization[]
+  restaurants: Restaurant[]
 }
 
-export default function OrganizationsList({ organizations }: Props) {
-  const router = useRouter()
-
-  if (organizations.length === 0) {
+export default function RestaurantsList({ restaurants }: Props) {
+  if (restaurants.length === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-slate-500">Henüz işletme eklenmemiş.</p>
@@ -69,54 +66,57 @@ export default function OrganizationsList({ organizations }: Props) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {organizations.map((org) => (
-            <TableRow key={org.id}>
+          {restaurants.map((restaurant) => (
+            <TableRow key={restaurant.id}>
               <TableCell>
                 <div className="flex items-center gap-3">
-                  {org.logo_url ? (
-                    <img
-                      src={org.logo_url}
-                      alt={org.name}
-                      className="w-10 h-10 rounded-lg object-cover"
-                    />
+                  {restaurant.logo_url ? (
+                    <div className="relative w-10 h-10 rounded-lg overflow-hidden">
+                      <Image
+                        src={restaurant.logo_url}
+                        alt={restaurant.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
                   ) : (
                     <div className="w-10 h-10 rounded-lg bg-slate-200 flex items-center justify-center">
                       <span className="text-lg font-bold text-slate-600">
-                        {org.name.charAt(0)}
+                        {restaurant.name.charAt(0)}
                       </span>
                     </div>
                   )}
                   <div>
-                    <div className="font-medium">{org.name}</div>
+                    <div className="font-medium">{restaurant.name}</div>
                   </div>
                 </div>
               </TableCell>
               <TableCell>
                 <code className="text-sm bg-slate-100 px-2 py-1 rounded">
-                  /{org.slug}
+                  /{restaurant.slug}
                 </code>
               </TableCell>
-              <TableCell>{getStatusBadge(org.status)}</TableCell>
-              <TableCell className="capitalize">{org.subscription_tier}</TableCell>
+              <TableCell>{getStatusBadge(restaurant.status)}</TableCell>
+              <TableCell className="capitalize">{restaurant.subscription_tier}</TableCell>
               <TableCell className="text-sm text-slate-600">
-                {formatDistanceToNow(new Date(org.created_at), {
+                {formatDistanceToNow(new Date(restaurant.created_at), {
                   addSuffix: true,
                   locale: tr,
                 })}
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-2">
-                  <Link href={`/${org.slug}`} target="_blank">
+                  <Link href={`/${restaurant.slug}`} target="_blank">
                     <Button variant="ghost" size="sm">
                       <ExternalLink className="h-4 w-4" />
                     </Button>
                   </Link>
-                  <Link href={`/admin/organizations/${org.id}/qr`}>
+                  <Link href={`/admin/restaurants/${restaurant.id}/qr`}>
                     <Button variant="ghost" size="sm">
                       <QrCode className="h-4 w-4" />
                     </Button>
                   </Link>
-                  <Link href={`/admin/organizations/${org.id}/edit`}>
+                  <Link href={`/admin/restaurants/${restaurant.id}/edit`}>
                     <Button variant="ghost" size="sm">
                       <Edit className="h-4 w-4" />
                     </Button>

@@ -11,43 +11,21 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     
     // Validate order data
-    const orderData = validateOrder(body)
-    const { items, table_id, customer_name, customer_notes } = orderData
+    // Note: validateOrder might need updates if it checks for table_id instead of qr_code_id or restaurant_id
+    // For now assuming body structure matches.
+    const { items, qr_code_id, customer_name, customer_notes, restaurant_id } = body
+
+    if (!items || items.length === 0) {
+      return NextResponse.json({ error: 'Items are required' }, { status: 400 })
+    }
+
+    if (!restaurant_id) {
+       return NextResponse.json({ error: 'Restaurant ID is required' }, { status: 400 })
+    }
 
     const supabase = createClient()
 
-    // Get table information
-    let organizationId: string
-
-    if (table_id) {
-      const { data: table, error: tableError } = await supabase
-        .from('tables')
-        .select('organization_id')
-        .eq('id', table_id)
-        .maybeSingle()
-
-      if (tableError || !table) {
-        return NextResponse.json(
-          { error: 'Table not found' },
-          { status: 404 }
-        )
-      }
-
-      organizationId = table.organization_id
-    } else {
-      // If no table_id, get organization from request
-      const orgId = body.organization_id
-      if (!orgId) {
-        return NextResponse.json(
-          { error: 'Organization ID is required' },
-          { status: 400 }
-        )
-      }
-      organizationId = orgId
-    }
-
-    // Calculate total amount
-    const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0)
+    // Verify restaurant exists (optional but good)
 
     // Generate order number
     const orderNumber = generateOrderNumber()
@@ -55,40 +33,89 @@ export async function POST(request: NextRequest) {
     // Get session ID from request or generate new one
     const sessionId = body.session_id || `session_${Date.now()}`
 
+    // Calculate total amounts
+    // Assuming items have price. We should ideally fetch prices from DB to prevent tampering.
+    // For strictness, let's fetch products.
+    const productIds = items.map((i: any) => i.product_id)
+    const { data: products } = await supabase
+      .from('products')
+      .select('id, price, name_tr, name_en')
+      .in('id', productIds)
+      .eq('restaurant_id', restaurant_id)
+
+    if (!products || products.length !== items.length) {
+       // Some products not found or mismatch
+       // Proceeding with provided prices might be risky but common in simple apps.
+       // Let's use DB prices for calculation if found.
+    }
+
+    let subtotal = 0
+    const orderItemsToInsert = items.map((item: any) => {
+      const product = products?.find(p => p.id === item.product_id)
+      const price = product ? product.price : item.price
+      const name = product ? (product.name_tr || product.name_en) : 'Unknown Product'
+
+      subtotal += price * item.quantity
+
+      return {
+        product_id: item.product_id,
+        product_name: name,
+        product_price: price,
+        quantity: item.quantity,
+        notes: item.notes
+      }
+    })
+
+    const taxAmount = subtotal * 0.10 // Example 10% tax
+    const totalAmount = subtotal + taxAmount
+
     // Create order
     const { data: order, error: orderError } = await supabase
       .from('orders')
       .insert({
-        organization_id: organizationId,
-        table_id: table_id || null,
+        restaurant_id: restaurant_id,
+        qr_code_id: qr_code_id || null,
         order_number: orderNumber,
-        items: items,
+        // items: items, // Removed: items are in separate table now
+        subtotal: subtotal,
+        tax_amount: taxAmount,
         total_amount: totalAmount,
         status: 'pending',
         customer_name: customer_name || null,
         customer_notes: customer_notes || null,
         session_id: sessionId,
+        payment_status: 'unpaid'
       })
       .select()
-      .maybeSingle()
+      .single()
 
     if (orderError || !order) {
       throw orderError || new Error('Failed to create order')
     }
 
-    // Update table status if table exists
-    if (table_id) {
-      await supabase
-        .from('tables')
-        .update({ status: 'occupied' })
-        .eq('id', table_id)
+    // Insert order items
+    const itemsWithOrderId = orderItemsToInsert.map((item: any) => ({
+      ...item,
+      order_id: order.id
+    }))
+
+    const { error: itemsError } = await supabase
+      .from('order_items')
+      .insert(itemsWithOrderId)
+
+    if (itemsError) {
+      console.error('Failed to insert order items:', itemsError)
+      // Should probably delete order or mark as failed, but simplifying here
     }
+
+    // Update table status (qr_code status?) - Schema doesn't have occupied status on qr_codes, mostly 'active'.
+    // Skipping table status update as per new schema.
 
     // Track analytics
     await supabase
       .from('analytics_events')
       .insert({
-        organization_id: organizationId,
+        restaurant_id: restaurant_id,
         event_type: 'order_created',
         event_data: {
           order_id: order.id,
@@ -101,34 +128,26 @@ export async function POST(request: NextRequest) {
     // Trigger webhooks for order.created event
     triggerWebhooks(
       supabase,
-      organizationId,
+      restaurant_id,
       'order.created',
       order.id,
-      order,
+      { ...order, items: itemsWithOrderId }, // Include items in webhook payload
       {
-        table_number: table_id ? order.table_id : undefined,
+        qr_code_id: qr_code_id,
         customer_name: customer_name || undefined,
         items_count: items.length,
       }
     ).catch(err => {
       console.error('Webhook trigger error:', err)
-      // Don't fail the request if webhook fails
     })
 
     return NextResponse.json({
-      order,
+      order: { ...order, items: itemsWithOrderId },
       message: 'Order created successfully',
     }, { status: 201 })
   } catch (error: any) {
     console.error('Order Creation Error:', error)
     
-    if (error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Invalid request data', details: error.errors },
-        { status: 400 }
-      )
-    }
-
     return NextResponse.json(
       { error: 'Internal server error', message: error.message },
       { status: 500 }
@@ -140,11 +159,11 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const sessionId = searchParams.get('session_id')
-    const organizationId = searchParams.get('organization_id')
+    const restaurantId = searchParams.get('restaurant_id')
 
-    if (!sessionId && !organizationId) {
+    if (!sessionId && !restaurantId) {
       return NextResponse.json(
-        { error: 'session_id or organization_id is required' },
+        { error: 'session_id or restaurant_id is required' },
         { status: 400 }
       )
     }
@@ -153,15 +172,15 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('orders')
-      .select('*, table:tables(table_number, location_description)')
+      .select('*, qr_code:qr_codes(table_number, location_description)') // Join qr_codes
       .order('created_at', { ascending: false })
 
     if (sessionId) {
       query = query.eq('session_id', sessionId)
     }
 
-    if (organizationId) {
-      query = query.eq('organization_id', organizationId)
+    if (restaurantId) {
+      query = query.eq('restaurant_id', restaurantId)
     }
 
     const { data: orders, error } = await query

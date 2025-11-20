@@ -17,7 +17,7 @@ import {
 
 const navigation = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-  { name: 'İşletmeler', href: '/admin/organizations', icon: Store },
+  { name: 'İşletmeler', href: '/admin/restaurants', icon: Store },
   { name: 'Kullanıcılar', href: '/admin/users', icon: Users },
   { name: 'Analitik', href: '/admin/analytics', icon: BarChart3 },
   { name: 'Ayarlar', href: '/admin/settings', icon: Settings },

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -26,7 +27,7 @@ const PERSONALITY_OPTIONS = [
   { value: 'casual', label: 'Rahat', description: 'Gevşek ve arkadaşça' },
 ]
 
-export default function NewOrganizationForm() {
+export default function NewRestaurantForm() {
   const router = useRouter()
   const { toast } = useToast()
 
@@ -74,15 +75,15 @@ export default function NewOrganizationForm() {
     }
   }
 
-  const uploadLogo = async (organizationId: string): Promise<string | null> => {
+  const uploadLogo = async (restaurantId: string): Promise<string | null> => {
     if (!logoFile) return null
 
     const fileExt = logoFile.name.split('.').pop()
-    const fileName = `${organizationId}-${Date.now()}.${fileExt}`
+    const fileName = `${restaurantId}-${Date.now()}.${fileExt}`
     const filePath = `logos/${fileName}`
 
     const { error: uploadError } = await supabase.storage
-      .from('organizations')
+      .from('restaurant-logos')
       .upload(filePath, logoFile)
 
     if (uploadError) {
@@ -91,7 +92,7 @@ export default function NewOrganizationForm() {
     }
 
     const { data: { publicUrl } } = supabase.storage
-      .from('organizations')
+      .from('restaurant-logos')
       .getPublicUrl(filePath)
 
     return publicUrl
@@ -162,7 +163,7 @@ export default function NewOrganizationForm() {
       const categoryPromises = formData.categories.map((categoryName, index) =>
         (supabase.from('categories').insert({
           restaurant_id: restaurant.id,
-          name: categoryName,
+          name_tr: categoryName,
           display_order: index,
           visible: true,
         } as any) as any)
@@ -187,10 +188,10 @@ export default function NewOrganizationForm() {
         description: `${formData.name} başarıyla oluşturuldu.`,
       })
 
-      router.push('/admin/organizations')
+      router.push('/admin/restaurants')
       router.refresh()
     } catch (error: any) {
-      console.error('Error creating organization:', error)
+      console.error('Error creating restaurant:', error)
       toast({
         variant: 'destructive',
         title: 'Hata',
@@ -279,10 +280,11 @@ export default function NewOrganizationForm() {
             <div className="flex items-center gap-4">
               {logoPreview ? (
                 <div className="relative w-24 h-24 rounded-lg border-2 border-slate-200 overflow-hidden">
-                  <img
+                  <Image
                     src={logoPreview}
                     alt="Logo preview"
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
                   />
                   <button
                     type="button"
@@ -290,7 +292,7 @@ export default function NewOrganizationForm() {
                       setLogoFile(null)
                       setLogoPreview(null)
                     }}
-                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full"
+                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full z-10"
                   >
                     <X className="h-3 w-3" />
                   </button>

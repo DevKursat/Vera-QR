@@ -872,7 +872,7 @@ CREATE TRIGGER update_webhook_configs_updated_at BEFORE UPDATE ON webhook_config
 -- UYARI: Bu UUID'yi gerçek auth.users ID'si ile değiştirin!
 INSERT INTO profiles (id, email, full_name, role, is_active)
 VALUES (
-    '00000000-0000-0000-0000-000000000001', -- Bu ID'yi gerçek auth.users.id ile değiştirin
+    'b3906b21-7eb4-4251-b22d-51c015373ba5', -- Bu ID'yi gerçek auth.users.id ile değiştirin
     'admin@veraqr.com',
     'Platform Yöneticisi',
     'platform_admin',

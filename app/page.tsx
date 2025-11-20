@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { QrCode, Brain, Utensils, TrendingUp, Shield, Zap } from 'lucide-react'
@@ -51,12 +52,14 @@ export default function HomePage() {
             <Link href="#features">{t.landing.moreInfo}</Link>
           </Button>
         </div>
-        <div className="mt-16 relative">
+        <div className="mt-16 relative mx-auto max-w-4xl aspect-[16/9]">
           <div className="absolute inset-0 bg-gradient-to-t from-white dark:from-gray-900 via-transparent to-transparent z-10" />
-          <img
+          <Image
             src="https://images.unsplash.com/photo-1559339352-11d035aa65de?w=1200&q=80"
             alt="QR Menu Demo"
-            className="rounded-lg shadow-2xl mx-auto max-w-4xl"
+            fill
+            className="rounded-lg shadow-2xl object-cover"
+            priority
           />
         </div>
       </section>

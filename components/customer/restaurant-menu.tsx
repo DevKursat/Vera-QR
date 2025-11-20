@@ -11,21 +11,42 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
 import { formatCurrency, generateSessionId, getStatusColor } from '@/lib/utils'
-import type { Organization, MenuItem, MenuCategory, Campaign } from '@/lib/supabase/types'
+import type { Database } from '@/lib/supabase/types'
 import AIAssistantChat from './ai-assistant-chat'
 
-interface MenuCategoryWithItems extends MenuCategory {
-  items: MenuItem[]
+type Restaurant = Database['public']['Tables']['restaurants']['Row']
+type Product = Database['public']['Tables']['products']['Row']
+type Category = Database['public']['Tables']['categories']['Row']
+
+// Define Campaign type if it's not in the database schema yet, or fetch it from DB if it exists.
+// Based on provided schema, there is no 'campaigns' table. Assuming it might be passed as any or defined locally.
+interface Campaign {
+    id: string
+    title: string
+    description: string | null
+    discount_percentage: number | null
+}
+
+interface CategoryWithItems extends Category {
+  items: ProductWithDetails[]
+  // Add these properties as they are used in the component but might be missing in strict DB type or added via join
+  name: string
+}
+
+interface ProductWithDetails extends Product {
+    name: string
+    description: string | null
+    allergens: string[]
 }
 
 interface Props {
-  organization: Organization
-  categories: MenuCategoryWithItems[]
+  organization: Restaurant
+  categories: CategoryWithItems[]
   campaigns: Campaign[]
   tableInfo: any
 }
 
-interface CartItem extends MenuItem {
+interface CartItem extends ProductWithDetails {
   quantity: number
   notes?: string
 }
@@ -44,14 +65,14 @@ export default function RestaurantMenu({ organization, categories, campaigns, ta
   const [cart, setCart] = useState<CartItem[]>([])
   const [showCart, setShowCart] = useState(false)
   const [showAI, setShowAI] = useState(false)
-  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null)
+  const [selectedItem, setSelectedItem] = useState<ProductWithDetails | null>(null)
   const [sessionId] = useState(() => generateSessionId())
   const [customerName, setCustomerName] = useState('')
   const [customerNotes, setCustomerNotes] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedLanguage, setSelectedLanguage] = useState('tr')
   const [showLanguageMenu, setShowLanguageMenu] = useState(false)
-  const [translatedCategories, setTranslatedCategories] = useState<MenuCategoryWithItems[]>(categories)
+  const [translatedCategories, setTranslatedCategories] = useState<CategoryWithItems[]>(categories)
   const [isTranslating, setIsTranslating] = useState(false)
   const { toast } = useToast()
 
@@ -139,7 +160,7 @@ export default function RestaurantMenu({ organization, categories, campaigns, ta
     }
   }
 
-  const addToCart = (item: MenuItem, quantity: number = 1) => {
+  const addToCart = (item: ProductWithDetails, quantity: number = 1) => {
     setCart(prev => {
       const existing = prev.find(i => i.id === item.id)
       if (existing) {
@@ -232,7 +253,7 @@ export default function RestaurantMenu({ organization, categories, campaigns, ta
   }
 
   return (
-    <div className="min-h-screen bg-background" style={{ '--brand-color': organization.brand_color } as any}>
+    <div className="min-h-screen bg-background" style={{ '--brand-color': organization.primary_color } as any}>
       {/* Header */}
       <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur">
         <div className="container flex h-16 items-center justify-between">

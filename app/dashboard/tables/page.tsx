@@ -9,10 +9,10 @@ export default async function TablesPage() {
   const supabase = createClient()
   const adminInfo = await getRestaurantAdminInfo()
 
-  const { data: tables } = await supabase
-    .from('tables')
+  const { data: qrCodes } = await supabase
+    .from('qr_codes')
     .select('*')
-    .eq('organization_id', adminInfo?.organization_id)
+    .eq('restaurant_id', adminInfo?.restaurant_id)
     .order('table_number', { ascending: true })
 
   return (
@@ -39,8 +39,8 @@ export default async function TablesPage() {
       </div>
 
       <TablesManagement
-        tables={tables || []}
-        organization={adminInfo!.organization}
+        qrCodes={qrCodes || []}
+        restaurant={adminInfo!.restaurant}
       />
     </div>
   )
