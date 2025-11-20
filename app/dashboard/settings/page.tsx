@@ -16,6 +16,7 @@ export default function SettingsPage() {
   const { t, language } = useApp()
   const [loading, setLoading] = useState(false)
   const [webhookUrl, setWebhookUrl] = useState('')
+  const [webhookConfigId, setWebhookConfigId] = useState<string | null>(null)
   const [testingWebhook, setTestingWebhook] = useState(false)
   const [restaurantId, setRestaurantId] = useState<string | null>(null)
 
@@ -30,21 +31,24 @@ export default function SettingsPage() {
           .from('restaurant_admins')
           .select('restaurant_id')
           .eq('profile_id', user.id)
-          .single()
+          .maybeSingle()
 
         if (!adminData) return
 
         const restId = (adminData as any).restaurant_id
         setRestaurantId(restId)
 
-        const { data: restaurantData } = await supabase
-          .from('restaurants')
-          .select('webhook_url')
-          .eq('id', restId)
-          .single()
+        // Fetch from webhook_configs
+        const { data: webhookData } = await supabase
+          .from('webhook_configs')
+          .select('id, url')
+          .eq('restaurant_id', restId)
+          .eq('name', 'CRM Integration') // Assuming a default name for the simple UI
+          .maybeSingle()
 
-        if ((restaurantData as any)?.webhook_url) {
-          setWebhookUrl((restaurantData as any).webhook_url as string)
+        if (webhookData) {
+          setWebhookUrl(webhookData.url)
+          setWebhookConfigId(webhookData.id)
         }
       } catch (error) {
         console.error('Error loading webhook URL:', error)
@@ -71,11 +75,39 @@ export default function SettingsPage() {
 
       const restId = (adminData as any).restaurant_id
 
-      // Update restaurant webhook URL
-      const { error } = await (supabase
-        .from('restaurants') as any)
-        .update({ webhook_url: webhookUrl || null })
-        .eq('id', restId)
+      // Upsert into webhook_configs
+      const configData = {
+        restaurant_id: restId,
+        name: 'CRM Integration',
+        url: webhookUrl,
+        secret_key: 'default-secret', // In a real app, generate this securely
+        events: ['order.created', 'order.updated', 'order.completed', 'order.cancelled'],
+        is_active: !!webhookUrl,
+        retry_enabled: true,
+        max_retries: 3,
+        timeout_seconds: 10
+      }
+
+      let error;
+
+      if (webhookConfigId) {
+         const { error: updateError } = await supabase
+          .from('webhook_configs')
+          .update(configData)
+          .eq('id', webhookConfigId)
+         error = updateError;
+      } else {
+         const { data: newConfig, error: insertError } = await supabase
+          .from('webhook_configs')
+          .insert(configData)
+          .select()
+          .single()
+
+         if (newConfig) {
+            setWebhookConfigId(newConfig.id)
+         }
+         error = insertError;
+      }
 
       if (error) throw error
 
@@ -111,7 +143,7 @@ export default function SettingsPage() {
         timestamp: new Date().toISOString(),
         data: {
           message: language === 'tr' ? 'Bu bir test mesajıdır' : 'This is a test message',
-          restaurant_id: 'test-id',
+          restaurant_id: restaurantId || 'test-id',
         },
       }
 

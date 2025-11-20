@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import {
@@ -71,11 +72,15 @@ export default function RestaurantSidebar({ organization }: Props) {
           {/* Logo */}
           <div className="flex items-center gap-3 h-16 px-6 border-b border-slate-200 dark:border-border">
             {organization?.logo_url ? (
-              <img
-                src={organization.logo_url}
-                alt={organization.name}
-                className="w-10 h-10 rounded-lg object-cover"
-              />
+              <div className="relative w-10 h-10 rounded-lg overflow-hidden">
+                <Image
+                  src={organization.logo_url}
+                  alt={organization.name}
+                  fill
+                  className="object-cover"
+                  sizes="40px"
+                />
+              </div>
             ) : (
               <div
                 className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"

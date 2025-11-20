@@ -12,7 +12,7 @@ export type WebhookEvent =
 export interface WebhookPayload {
   event: WebhookEvent;
   timestamp: string;
-  organization_id: string;
+  restaurant_id: string;
   data: any;
   metadata?: {
     table_number?: string;
@@ -23,7 +23,7 @@ export interface WebhookPayload {
 
 export interface WebhookConfig {
   id: string;
-  organization_id: string;
+  restaurant_id: string;
   name: string;
   url: string;
   secret_key: string;
@@ -133,7 +133,7 @@ export async function logWebhookDelivery(
   supabase: ReturnType<typeof createClient<Database>>,
   {
     webhookConfigId,
-    organizationId,
+    restaurantId,
     eventType,
     eventId,
     requestUrl,
@@ -149,7 +149,7 @@ export async function logWebhookDelivery(
     nextRetryAt,
   }: {
     webhookConfigId: string;
-    organizationId: string;
+    restaurantId: string;
     eventType: string;
     eventId: string;
     requestUrl: string;
@@ -167,7 +167,7 @@ export async function logWebhookDelivery(
 ) {
   const { error } = await (supabase.from('webhook_logs') as any).insert({
     webhook_config_id: webhookConfigId,
-    organization_id: organizationId,
+    restaurant_id: restaurantId,
     event_type: eventType,
     event_id: eventId,
     request_url: requestUrl,
@@ -204,17 +204,17 @@ export function calculateRetryDelay(attemptNumber: number): number {
  */
 export async function triggerWebhooks(
   supabase: ReturnType<typeof createClient<Database>>,
-  organizationId: string,
+  restaurantId: string,
   event: WebhookEvent,
   eventId: string,
   data: any,
   metadata?: Record<string, any>
 ): Promise<void> {
-  // Fetch active webhook configs for this organization and event
+  // Fetch active webhook configs for this restaurant and event
   const { data: configs, error } = await supabase
     .from('webhook_configs')
     .select('*')
-    .eq('organization_id', organizationId)
+    .eq('restaurant_id', restaurantId)
     .eq('is_active', true)
     .contains('events', [event]);
 
@@ -231,7 +231,7 @@ export async function triggerWebhooks(
   const payload: WebhookPayload = {
     event,
     timestamp,
-    organization_id: organizationId,
+    restaurant_id: restaurantId,
     data,
     metadata,
   };
@@ -257,7 +257,7 @@ export async function triggerWebhooks(
     // Log the delivery
     await logWebhookDelivery(supabase, {
       webhookConfigId: config.id,
-      organizationId: config.organization_id,
+      restaurantId: config.restaurant_id,
       eventType: event,
       eventId,
       requestUrl: config.url,
@@ -345,7 +345,7 @@ export async function retryFailedWebhooks(
     // Log the retry attempt
     await logWebhookDelivery(supabase, {
       webhookConfigId: config.id,
-      organizationId: log.organization_id,
+      restaurantId: log.restaurant_id,
       eventType: log.event_type,
       eventId: log.event_id,
       requestUrl: config.url,

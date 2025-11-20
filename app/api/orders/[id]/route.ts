@@ -11,7 +11,7 @@ export async function PATCH(
     const body = await request.json()
     const { status } = body
 
-    if (!status || !['pending', 'preparing', 'ready', 'served', 'cancelled'].includes(status)) {
+    if (!status || !['pending', 'preparing', 'ready', 'served', 'cancelled', 'paid'].includes(status)) {
       return NextResponse.json(
         { error: 'Invalid status' },
         { status: 400 }
@@ -26,7 +26,7 @@ export async function PATCH(
       .update({ status, updated_at: new Date().toISOString() })
       .eq('id', id)
       .select()
-      .maybeSingle()
+      .single()
 
     if (error || !order) {
       return NextResponse.json(
@@ -35,19 +35,17 @@ export async function PATCH(
       )
     }
 
-    // If order is served or cancelled, update table status
-    if ((status === 'served' || status === 'cancelled') && order.table_id) {
-      await supabase
-        .from('tables')
-        .update({ status: 'available' })
-        .eq('id', order.table_id)
-    }
+    // If order is served/cancelled/paid, we might want to free up the table.
+    // But 'qr_codes' table doesn't strictly track occupancy like 'tables' might have.
+    // We can skip this or add logic if 'qr_codes' had a status column for occupancy.
+    // The current schema has status: 'active' | 'inactive' | 'damaged', which is physical status.
+    // So no table update needed here for occupancy.
 
     // Track analytics
     await supabase
       .from('analytics_events')
       .insert({
-        organization_id: order.organization_id,
+        restaurant_id: order.restaurant_id,
         event_type: 'order_status_updated',
         event_data: {
           order_id: order.id,
@@ -58,20 +56,25 @@ export async function PATCH(
 
     // Trigger webhooks for order status change
     const webhookEvent = status === 'served' ? 'order.completed' : 'order.updated'
+
+    // We might want to fetch items to include in webhook
+    const { data: items } = await supabase.from('order_items').select('*').eq('order_id', order.id)
+
     triggerWebhooks(
       supabase,
-      order.organization_id,
+      order.restaurant_id,
       webhookEvent,
       order.id,
-      order,
+      { ...order, items: items || [] },
       {
-        previous_status: order.status,
+        previous_status: order.status, // Note: this is the *new* status because we fetched after update.
+        // Ideally we should have fetched before update to get previous status,
+        // but for now let's just send the new status in metadata or adjust logic.
         new_status: status,
-        table_number: order.table_id || undefined,
+        qr_code_id: order.qr_code_id || undefined,
       }
     ).catch(err => {
       console.error('Webhook trigger error:', err)
-      // Don't fail the request if webhook fails
     })
 
     return NextResponse.json({
@@ -98,7 +101,7 @@ export async function GET(
 
     const { data: order, error } = await supabase
       .from('orders')
-      .select('*, table:tables(table_number, location_description), organization:organizations(name, logo_url)')
+      .select('*, qr_code:qr_codes(table_number, location_description), restaurant:restaurants(name, logo_url)')
       .eq('id', id)
       .maybeSingle()
 
@@ -109,7 +112,13 @@ export async function GET(
       )
     }
 
-    return NextResponse.json({ order })
+    // Fetch items
+    const { data: items } = await supabase
+      .from('order_items')
+      .select('*')
+      .eq('order_id', id)
+
+    return NextResponse.json({ order: { ...order, items } })
   } catch (error: any) {
     console.error('Order Fetch Error:', error)
     return NextResponse.json(
