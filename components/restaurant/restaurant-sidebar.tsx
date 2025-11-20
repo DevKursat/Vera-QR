@@ -10,7 +10,6 @@ import {
   ShoppingCart,
   QrCode,
   Users,
-  MessageSquare,
   Settings,
   Bell,
   BarChart3,
@@ -20,28 +19,30 @@ import {
   Ticket,
   Star,
 } from 'lucide-react'
-
-const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Menü', href: '/dashboard/menu', icon: UtensilsCrossed },
-  { name: 'Siparişler', href: '/dashboard/orders', icon: ShoppingCart },
-  { name: 'Masalar & QR', href: '/dashboard/tables', icon: QrCode },
-  { name: 'Çağrı İstekleri', href: '/dashboard/calls', icon: Bell },
-  { name: 'Yorumlar', href: '/dashboard/reviews', icon: Star },
-  { name: 'Sadakat Programı', href: '/dashboard/loyalty', icon: Gift },
-  { name: 'Kuponlar', href: '/dashboard/coupons', icon: Ticket },
-  { name: 'Müşteriler', href: '/dashboard/customers', icon: Users },
-  { name: 'Analitik', href: '/dashboard/analytics', icon: BarChart3 },
-  { name: 'Ayarlar', href: '/dashboard/settings', icon: Settings },
-]
+import { useApp } from '@/lib/app-context'
 
 interface Props {
-  organization: any
+  organization: any // Actually restaurant object now
 }
 
 export default function RestaurantSidebar({ organization }: Props) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
+  const { t } = useApp()
+
+  const navigation = [
+    { name: t.sidebar.dashboard, href: '/dashboard', icon: LayoutDashboard },
+    { name: t.sidebar.menu, href: '/dashboard/menu', icon: UtensilsCrossed },
+    { name: t.sidebar.orders, href: '/dashboard/orders', icon: ShoppingCart },
+    { name: t.sidebar.tables, href: '/dashboard/tables', icon: QrCode },
+    { name: t.sidebar.calls, href: '/dashboard/calls', icon: Bell },
+    { name: t.sidebar.reviews, href: '/dashboard/reviews', icon: Star },
+    { name: t.sidebar.loyalty, href: '/dashboard/loyalty', icon: Gift },
+    { name: t.sidebar.coupons, href: '/dashboard/coupons', icon: Ticket },
+    { name: t.sidebar.customers, href: '/dashboard/customers', icon: Users },
+    { name: t.sidebar.analytics, href: '/dashboard/analytics', icon: BarChart3 },
+    { name: t.sidebar.settings, href: '/dashboard/settings', icon: Settings },
+  ]
 
   return (
     <>
@@ -78,13 +79,13 @@ export default function RestaurantSidebar({ organization }: Props) {
             ) : (
               <div
                 className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
-                style={{ backgroundColor: organization?.brand_color || '#3B82F6' }}
+                style={{ backgroundColor: organization?.primary_color || '#3B82F6' }}
               >
                 {organization?.name?.charAt(0) || 'R'}
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <h1 className="text-sm font-bold truncate">{organization?.name}</h1>
+              <h1 className="text-sm font-bold truncate dark:text-white">{organization?.name}</h1>
               <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Restoran Paneli</p>
             </div>
           </div>
@@ -106,7 +107,7 @@ export default function RestaurantSidebar({ organization }: Props) {
                   )}
                   style={
                     isActive
-                      ? { backgroundColor: organization?.brand_color || '#3B82F6' }
+                      ? { backgroundColor: organization?.primary_color || '#3B82F6' }
                       : {}
                   }
                 >

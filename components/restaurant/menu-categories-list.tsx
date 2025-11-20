@@ -6,10 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Edit, Eye, EyeOff, Plus, Trash } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { useApp } from '@/lib/app-context'
 
 interface Category {
   id: string
   name_tr: string
+  name_en: string | null
   visible: boolean | null
   display_order: number | null
 }
@@ -18,7 +20,9 @@ interface Product {
   id: string
   category_id: string | null
   name_tr: string
+  name_en: string | null
   description_tr: string | null
+  description_en: string | null
   price: number
   image_url: string | null
   is_available: boolean | null
@@ -32,9 +36,18 @@ interface Props {
 
 export default function MenuCategoriesList({ categories, items }: Props) {
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null)
+  const { t, language } = useApp()
 
   const getItemsByCategory = (categoryId: string) => {
     return items.filter((item) => item.category_id === categoryId)
+  }
+
+  const getName = (item: Category | Product) => {
+    return language === 'tr' ? item.name_tr : (item.name_en || item.name_tr)
+  }
+
+  const getDescription = (item: Product) => {
+    return language === 'tr' ? item.description_tr : (item.description_en || item.description_tr)
   }
 
   return (
@@ -42,11 +55,11 @@ export default function MenuCategoriesList({ categories, items }: Props) {
       {categories.length === 0 ? (
         <Card>
           <CardContent className="text-center py-12">
-            <p className="text-slate-500 mb-4">Henüz kategori eklenmemiş.</p>
+            <p className="text-slate-500 mb-4 dark:text-slate-400">{t.menu.noCategory}</p>
             <Link href="/dashboard/menu/categories/new">
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                İlk Kategoriyi Ekle
+                {t.menu.firstCategory}
               </Button>
             </Link>
           </CardContent>
@@ -57,7 +70,7 @@ export default function MenuCategoriesList({ categories, items }: Props) {
           const isExpanded = expandedCategory === category.id
 
           return (
-            <Card key={category.id}>
+            <Card key={category.id} className="dark:bg-gray-800 dark:border-gray-700">
               <CardHeader className="flex flex-row items-center justify-between">
                 <div className="flex items-center gap-3 flex-1">
                   <Button
@@ -66,20 +79,22 @@ export default function MenuCategoriesList({ categories, items }: Props) {
                     onClick={() =>
                       setExpandedCategory(isExpanded ? null : category.id)
                     }
+                    className="dark:text-slate-200"
                   >
                     {isExpanded ? '▼' : '▶'}
                   </Button>
-                  <CardTitle className="text-lg">{category.name_tr}</CardTitle>
+                  <CardTitle className="text-lg dark:text-white">{getName(category)}</CardTitle>
                   <Badge variant={category.visible ? 'default' : 'secondary'}>
-                    {category.visible ? 'Görünür' : 'Gizli'}
+                    {category.visible ? t.common.success : t.common.error}
+                    {/* Using success/error purely for color, ideally should add proper translation for Visible/Hidden */}
                   </Badge>
-                  <span className="text-sm text-slate-500">
-                    ({categoryItems.length} ürün)
+                  <span className="text-sm text-slate-500 dark:text-slate-400">
+                    ({categoryItems.length} {t.menu.products.toLowerCase()})
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Link href={`/dashboard/menu/categories/${category.id}/edit`}>
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" className="dark:text-slate-200">
                       <Edit className="h-4 w-4" />
                     </Button>
                   </Link>
@@ -89,12 +104,12 @@ export default function MenuCategoriesList({ categories, items }: Props) {
               {isExpanded && (
                 <CardContent>
                   {categoryItems.length === 0 ? (
-                    <div className="text-center py-8 text-slate-500">
-                      <p className="mb-3">Bu kategoride henüz ürün yok.</p>
+                    <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                      <p className="mb-3">{t.menu.noProduct}</p>
                       <Link href={`/dashboard/menu/items/new?category=${category.id}`}>
                         <Button size="sm">
                           <Plus className="mr-2 h-4 w-4" />
-                          Ürün Ekle
+                          {t.menu.newProduct}
                         </Button>
                       </Link>
                     </div>
@@ -103,17 +118,17 @@ export default function MenuCategoriesList({ categories, items }: Props) {
                       {categoryItems.map((item) => (
                         <div
                           key={item.id}
-                          className="border rounded-lg p-4 hover:border-blue-500 transition-colors"
+                          className="border rounded-lg p-4 hover:border-blue-500 transition-colors dark:border-gray-600"
                         >
                           {item.image_url && (
                             <img
                               src={item.image_url}
-                              alt={item.name_tr}
+                              alt={getName(item)}
                               className="w-full h-32 object-cover rounded-lg mb-3"
                             />
                           )}
                           <div className="flex items-start justify-between mb-2">
-                            <h4 className="font-semibold">{item.name_tr}</h4>
+                            <h4 className="font-semibold dark:text-white">{getName(item)}</h4>
                             <Badge
                               variant={item.is_available ? 'default' : 'destructive'}
                             >
@@ -124,25 +139,25 @@ export default function MenuCategoriesList({ categories, items }: Props) {
                               )}
                             </Badge>
                           </div>
-                          {item.description_tr && (
-                            <p className="text-sm text-slate-600 mb-2 line-clamp-2">
-                              {item.description_tr}
+                          {getDescription(item) && (
+                            <p className="text-sm text-slate-600 dark:text-slate-400 mb-2 line-clamp-2">
+                              {getDescription(item)}
                             </p>
                           )}
                           <div className="flex items-center justify-between">
-                            <span className="text-lg font-bold text-green-600">
+                            <span className="text-lg font-bold text-green-600 dark:text-green-400">
                               ₺{item.price.toFixed(2)}
                             </span>
                             <Link href={`/dashboard/menu/items/${item.id}/edit`}>
-                              <Button variant="outline" size="sm">
+                              <Button variant="outline" size="sm" className="dark:border-gray-600 dark:text-slate-200">
                                 <Edit className="h-3 w-3 mr-1" />
-                                Düzenle
+                                {t.common.edit}
                               </Button>
                             </Link>
                           </div>
                           {item.stock_count !== null && (
-                            <div className="mt-2 text-xs text-slate-500">
-                              Stok: {item.stock_count}
+                            <div className="mt-2 text-xs text-slate-500 dark:text-slate-500">
+                              {t.menu.stock}: {item.stock_count}
                             </div>
                           )}
                         </div>

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { QrCode, Download, Edit } from 'lucide-react'
 import QRCode from 'qrcode'
+import { useApp } from '@/lib/app-context'
 
 interface QrCodeItem {
   id: string
@@ -22,6 +23,7 @@ interface Props {
 
 export default function TablesManagement({ qrCodes, restaurant }: Props) {
   const [generatingQR, setGeneratingQR] = useState<string | null>(null)
+  const { t } = useApp()
 
   const downloadQRCode = async (qrCode: QrCodeItem) => {
     setGeneratingQR(qrCode.id)
@@ -70,7 +72,7 @@ export default function TablesManagement({ qrCodes, restaurant }: Props) {
       link.click()
     } catch (error) {
       console.error('QR code generation error:', error)
-      alert('QR kod oluşturulurken hata oluştu')
+      alert(t.common.error)
     } finally {
       setGeneratingQR(null)
     }
@@ -78,8 +80,8 @@ export default function TablesManagement({ qrCodes, restaurant }: Props) {
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
-      active: { label: 'Aktif', variant: 'default' },
-      inactive: { label: 'Pasif', variant: 'secondary' },
+      active: { label: t.orders.active, variant: 'default' },
+      inactive: { label: 'Pasif', variant: 'secondary' }, // Could add to translations if needed
       damaged: { label: 'Hasarlı', variant: 'destructive' },
     }
     const { label, variant } = config[status] || { label: status, variant: 'secondary' }
@@ -89,42 +91,42 @@ export default function TablesManagement({ qrCodes, restaurant }: Props) {
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {qrCodes.length === 0 ? (
-        <Card className="col-span-full">
+        <Card className="col-span-full dark:bg-gray-800 dark:border-gray-700">
           <CardContent className="text-center py-12">
-            <p className="text-slate-500 mb-4">Henüz masa eklenmemiş.</p>
-            <Button>Masa Ekle</Button>
+            <p className="text-slate-500 mb-4 dark:text-slate-400">{t.tables.noTable}</p>
+            <Button>{t.tables.addTable}</Button>
           </CardContent>
         </Card>
       ) : (
         qrCodes.map((qrCode) => (
-          <Card key={qrCode.id}>
+          <Card key={qrCode.id} className="dark:bg-gray-800 dark:border-gray-700">
             <CardHeader>
               <div className="flex items-start justify-between">
-                <CardTitle>{qrCode.table_number}</CardTitle>
+                <CardTitle className="dark:text-white">{qrCode.table_number}</CardTitle>
                 {getStatusBadge(qrCode.status)}
               </div>
               {qrCode.location_description && (
-                <p className="text-sm text-slate-600 mt-2">
+                <p className="text-sm text-slate-600 dark:text-slate-400 mt-2">
                   {qrCode.location_description}
                 </p>
               )}
             </CardHeader>
             <CardContent className="space-y-3">
-              <div className="flex items-center justify-center p-4 bg-slate-50 rounded-lg">
-                <QrCode className="h-24 w-24 text-slate-400" />
+              <div className="flex items-center justify-center p-4 bg-slate-50 dark:bg-gray-700 rounded-lg">
+                <QrCode className="h-24 w-24 text-slate-400 dark:text-slate-300" />
               </div>
               <div className="flex gap-2">
                 <Button
                   size="sm"
                   variant="outline"
-                  className="flex-1"
+                  className="flex-1 dark:border-gray-600 dark:text-slate-200"
                   onClick={() => downloadQRCode(qrCode)}
                   disabled={generatingQR === qrCode.id}
                 >
                   <Download className="h-4 w-4 mr-1" />
-                  {generatingQR === qrCode.id ? 'Hazırlanıyor...' : 'İndir'}
+                  {generatingQR === qrCode.id ? t.tables.preparing : t.tables.download}
                 </Button>
-                <Button size="sm" variant="ghost">
+                <Button size="sm" variant="ghost" className="dark:text-slate-200">
                   <Edit className="h-4 w-4" />
                 </Button>
               </div>
