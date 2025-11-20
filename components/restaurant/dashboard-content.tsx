@@ -4,12 +4,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ShoppingCart, DollarSign, Users, TrendingUp, UtensilsCrossed } from 'lucide-react'
 import Link from 'next/link'
 import { useApp } from '@/lib/app-context'
+import RecentActivity from './recent-activity'
 
 interface Props {
   todayOrders: number
   todayRevenue: number
   pendingOrders: number
   restaurantName: string
+  restaurantId?: string
 }
 
 export default function DashboardContent({
@@ -17,6 +19,7 @@ export default function DashboardContent({
   todayRevenue,
   pendingOrders,
   restaurantName,
+  restaurantId
 }: Props) {
   const { t } = useApp()
 
@@ -79,44 +82,53 @@ export default function DashboardContent({
         ))}
       </div>
 
-      {/* Quick Actions */}
-      <Card className="dark:bg-gray-800 dark:border-gray-700">
-        <CardHeader>
-          <CardTitle className="dark:text-white">{t.dashboard.quickActions}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Link
-              href="/dashboard/menu"
-              className="p-4 rounded-lg border-2 border-slate-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-colors text-center"
-            >
-              <UtensilsCrossed className="h-8 w-8 mx-auto mb-2 text-slate-600 dark:text-slate-300" />
-              <div className="text-sm font-medium dark:text-slate-200">{t.dashboard.editMenu}</div>
-            </Link>
-            <Link
-              href="/dashboard/orders"
-              className="p-4 rounded-lg border-2 border-slate-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-colors text-center"
-            >
-              <ShoppingCart className="h-8 w-8 mx-auto mb-2 text-slate-600 dark:text-slate-300" />
-              <div className="text-sm font-medium dark:text-slate-200">{t.dashboard.orders}</div>
-            </Link>
-            <Link
-              href="/dashboard/tables"
-              className="p-4 rounded-lg border-2 border-slate-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-colors text-center"
-            >
-              <ShoppingCart className="h-8 w-8 mx-auto mb-2 text-slate-600 dark:text-slate-300" />
-              <div className="text-sm font-medium dark:text-slate-200">{t.dashboard.qrCodes}</div>
-            </Link>
-            <Link
-              href="/dashboard/analytics"
-              className="p-4 rounded-lg border-2 border-slate-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-colors text-center"
-            >
-              <TrendingUp className="h-8 w-8 mx-auto mb-2 text-slate-600 dark:text-slate-300" />
-              <div className="text-sm font-medium dark:text-slate-200">{t.dashboard.analytics}</div>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 md:grid-cols-7">
+        {/* Quick Actions - Spans 4 columns */}
+        <div className="md:col-span-4 space-y-6">
+             <Card className="dark:bg-gray-800 dark:border-gray-700">
+                <CardHeader>
+                <CardTitle className="dark:text-white">{t.dashboard.quickActions}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                <div className="grid grid-cols-2 gap-4">
+                    <Link
+                    href="/dashboard/menu"
+                    className="p-4 rounded-lg border-2 border-slate-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-colors text-center"
+                    >
+                    <UtensilsCrossed className="h-8 w-8 mx-auto mb-2 text-slate-600 dark:text-slate-300" />
+                    <div className="text-sm font-medium dark:text-slate-200">{t.dashboard.editMenu}</div>
+                    </Link>
+                    <Link
+                    href="/dashboard/orders"
+                    className="p-4 rounded-lg border-2 border-slate-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-colors text-center"
+                    >
+                    <ShoppingCart className="h-8 w-8 mx-auto mb-2 text-slate-600 dark:text-slate-300" />
+                    <div className="text-sm font-medium dark:text-slate-200">{t.dashboard.orders}</div>
+                    </Link>
+                    <Link
+                    href="/dashboard/tables"
+                    className="p-4 rounded-lg border-2 border-slate-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-colors text-center"
+                    >
+                    <ShoppingCart className="h-8 w-8 mx-auto mb-2 text-slate-600 dark:text-slate-300" />
+                    <div className="text-sm font-medium dark:text-slate-200">{t.dashboard.qrCodes}</div>
+                    </Link>
+                    <Link
+                    href="/dashboard/analytics"
+                    className="p-4 rounded-lg border-2 border-slate-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-colors text-center"
+                    >
+                    <TrendingUp className="h-8 w-8 mx-auto mb-2 text-slate-600 dark:text-slate-300" />
+                    <div className="text-sm font-medium dark:text-slate-200">{t.dashboard.analytics}</div>
+                    </Link>
+                </div>
+                </CardContent>
+            </Card>
+        </div>
+
+        {/* Recent Activity - Spans 3 columns */}
+        <div className="md:col-span-3">
+            {restaurantId ? <RecentActivity restaurantId={restaurantId} /> : null}
+        </div>
+      </div>
     </div>
   )
 }

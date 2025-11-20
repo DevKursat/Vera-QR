@@ -1,9 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DollarSign, Users, ShoppingBag, Utensils } from 'lucide-react'
-import OverviewCharts from '@/components/admin/analytics/overview-charts'
 import { format, subDays } from 'date-fns'
 import { tr } from 'date-fns/locale'
+import AdminAnalyticsContent from '@/components/admin/analytics/analytics-content'
 
 export const dynamic = 'force-dynamic'
 
@@ -159,7 +159,7 @@ export default async function AdminAnalyticsPage() {
         </Card>
       </div>
 
-      <OverviewCharts revenueData={last30Days} statusData={statusData} />
+      <AdminAnalyticsContent revenueData={last30Days} statusData={statusData} />
     </div>
   )
 }

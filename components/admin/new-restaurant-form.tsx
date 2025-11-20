@@ -13,6 +13,7 @@ import { useToast } from '@/components/ui/use-toast'
 import { Loader2, Upload, X } from 'lucide-react'
 import { slugify } from '@/lib/utils'
 import GooglePlacesAutocomplete from './google-places-autocomplete'
+import SlugInput from '@/components/admin/slug-input'
 
 const BRAND_COLORS = [
   '#000000', '#EF4444', '#F59E0B', '#10B981', '#3B82F6', 
@@ -225,20 +226,11 @@ export default function NewRestaurantForm() {
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="slug">URL Slug *</Label>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-slate-500">veraqr.com/</span>
-              <Input
-                id="slug"
-                value={formData.slug}
-                onChange={(e) => setFormData({ ...formData, slug: slugify(e.target.value) })}
-                placeholder="bella-italia"
-                required
-                disabled={isLoading}
-              />
-            </div>
-          </div>
+          <SlugInput
+            value={formData.slug}
+            onChange={(val, isValid) => setFormData({ ...formData, slug: val })}
+            disabled={isLoading}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="description">Kısa Açıklama</Label>
