@@ -123,6 +123,7 @@ CREATE TABLE restaurants (
     address TEXT,
     wifi_ssid VARCHAR(255),
     wifi_password VARCHAR(255),
+    webhook_url TEXT,
     api_key VARCHAR(255) UNIQUE DEFAULT encode(gen_random_bytes(32), 'hex'),
     description TEXT,
     working_hours JSONB DEFAULT '{}'::jsonb,
@@ -360,6 +361,47 @@ CREATE TABLE loyalty_reward_redemptions (
     redeemed_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Webhook Konfigürasyonları
+CREATE TABLE webhook_configs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    url TEXT NOT NULL,
+    secret_key VARCHAR(255) NOT NULL DEFAULT encode(gen_random_bytes(32), 'hex'),
+    events TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+    is_active BOOLEAN DEFAULT true,
+    retry_enabled BOOLEAN DEFAULT true,
+    max_retries INTEGER DEFAULT 3,
+    timeout_seconds INTEGER DEFAULT 30,
+    custom_headers JSONB DEFAULT '{}'::jsonb,
+    last_triggered_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Webhook Delivery Logs
+CREATE TABLE webhook_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    webhook_config_id UUID NOT NULL REFERENCES webhook_configs(id) ON DELETE CASCADE,
+    restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+    event_type VARCHAR(100) NOT NULL,
+    event_id VARCHAR(255) NOT NULL,
+    request_url TEXT NOT NULL,
+    request_method VARCHAR(10) DEFAULT 'POST',
+    request_headers JSONB,
+    request_body JSONB,
+    request_signature VARCHAR(255),
+    response_status INTEGER,
+    response_body TEXT,
+    response_time_ms INTEGER,
+    status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'success', 'failed', 'retrying')),
+    attempt_number INTEGER DEFAULT 1,
+    error_message TEXT,
+    delivered_at TIMESTAMPTZ,
+    next_retry_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- ============================================================================
 -- İNDEKSLER (Performans için)
 -- ============================================================================
@@ -390,6 +432,12 @@ CREATE INDEX idx_loyalty_points_restaurant ON loyalty_points(restaurant_id);
 CREATE INDEX idx_loyalty_points_phone ON loyalty_points(customer_phone);
 CREATE INDEX idx_loyalty_transactions_loyalty ON loyalty_transactions(loyalty_points_id);
 CREATE INDEX idx_loyalty_rewards_restaurant ON loyalty_rewards(restaurant_id);
+CREATE INDEX idx_webhook_configs_restaurant ON webhook_configs(restaurant_id);
+CREATE INDEX idx_webhook_configs_active ON webhook_configs(is_active);
+CREATE INDEX idx_webhook_logs_config ON webhook_logs(webhook_config_id);
+CREATE INDEX idx_webhook_logs_restaurant ON webhook_logs(restaurant_id);
+CREATE INDEX idx_webhook_logs_status ON webhook_logs(status);
+CREATE INDEX idx_webhook_logs_next_retry ON webhook_logs(next_retry_at) WHERE status = 'retrying';
 
 -- ============================================================================
 -- ROW LEVEL SECURITY (RLS) POLİTİKALARI
@@ -414,6 +462,8 @@ ALTER TABLE loyalty_points ENABLE ROW LEVEL SECURITY;
 ALTER TABLE loyalty_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE loyalty_rewards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE loyalty_reward_redemptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE webhook_configs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE webhook_logs ENABLE ROW LEVEL SECURITY;
 
 -- Profiles politikaları
 CREATE POLICY "Kullanıcılar kendi profillerini görebilir"
@@ -709,6 +759,46 @@ CREATE POLICY "Restaurant adminler ödül kullanımlarını görüntüleyebilir"
         )
     );
 
+-- Webhook Configs politikaları
+CREATE POLICY "Restaurant adminler kendi webhook ayarlarını yönetebilir"
+    ON webhook_configs FOR ALL
+    USING (
+        EXISTS (
+            SELECT 1 FROM restaurant_admins ra
+            WHERE ra.restaurant_id = webhook_configs.restaurant_id
+            AND ra.profile_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Platform adminler tüm webhook ayarlarını görebilir"
+    ON webhook_configs FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE id = auth.uid() AND role = 'platform_admin'
+        )
+    );
+
+-- Webhook Logs politikaları
+CREATE POLICY "Restaurant adminler kendi webhook loglarını görüntüleyebilir"
+    ON webhook_logs FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM restaurant_admins ra
+            WHERE ra.restaurant_id = webhook_logs.restaurant_id
+            AND ra.profile_id = auth.uid()
+        )
+    );
+
+CREATE POLICY "Platform adminler tüm webhook loglarını görebilir"
+    ON webhook_logs FOR SELECT
+    USING (
+        EXISTS (
+            SELECT 1 FROM profiles
+            WHERE id = auth.uid() AND role = 'platform_admin'
+        )
+    );
+
 -- ============================================================================
 -- TRIGGER'LAR
 -- ============================================================================
@@ -760,6 +850,9 @@ CREATE TRIGGER update_loyalty_points_updated_at BEFORE UPDATE ON loyalty_points
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 CREATE TRIGGER update_loyalty_rewards_updated_at BEFORE UPDATE ON loyalty_rewards
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_webhook_configs_updated_at BEFORE UPDATE ON webhook_configs
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================================================
@@ -921,3 +1014,5 @@ COMMENT ON TABLE loyalty_points IS 'Müşteri sadakat puanları';
 COMMENT ON TABLE loyalty_transactions IS 'Sadakat puan işlemleri';
 COMMENT ON TABLE loyalty_rewards IS 'Sadakat ödülleri';
 COMMENT ON TABLE loyalty_reward_redemptions IS 'Ödül kullanımları';
+COMMENT ON TABLE webhook_configs IS 'Webhook konfigürasyonları - Restoran entegrasyonları';
+COMMENT ON TABLE webhook_logs IS 'Webhook delivery logları';

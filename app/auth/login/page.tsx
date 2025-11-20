@@ -121,12 +121,12 @@ export default function LoginPage() {
       }
 
       if (restaurantAdmin) {
-        console.log('✅ Restaurant admin! Redirecting to /restaurant/dashboard...')
+        console.log('✅ Restaurant admin! Redirecting to /dashboard...')
         toast({
           title: t.auth.loginSuccess,
           description: 'Redirecting to restaurant admin panel...',
         })
-        window.location.href = '/restaurant/dashboard'
+        window.location.href = '/dashboard'
         return
       }
 
