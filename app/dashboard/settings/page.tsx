@@ -34,16 +34,17 @@ export default function SettingsPage() {
 
         if (!adminData) return
 
-        setRestaurantId(adminData.restaurant_id)
+        const restId = (adminData as any).restaurant_id
+        setRestaurantId(restId)
 
         const { data: restaurantData } = await supabase
           .from('restaurants')
           .select('webhook_url')
-          .eq('id', adminData.restaurant_id)
+          .eq('id', restId)
           .single()
 
-        if (restaurantData?.webhook_url) {
-          setWebhookUrl(restaurantData.webhook_url)
+        if ((restaurantData as any)?.webhook_url) {
+          setWebhookUrl((restaurantData as any).webhook_url as string)
         }
       } catch (error) {
         console.error('Error loading webhook URL:', error)
@@ -68,11 +69,13 @@ export default function SettingsPage() {
 
       if (!adminData) throw new Error('Restaurant not found')
 
+      const restId = (adminData as any).restaurant_id
+
       // Update restaurant webhook URL
-      const { error } = await supabase
-        .from('restaurants')
+      const { error } = await (supabase
+        .from('restaurants') as any)
         .update({ webhook_url: webhookUrl || null })
-        .eq('id', adminData.restaurant_id)
+        .eq('id', restId)
 
       if (error) throw error
 
