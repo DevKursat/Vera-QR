@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -279,10 +280,11 @@ export default function NewRestaurantForm() {
             <div className="flex items-center gap-4">
               {logoPreview ? (
                 <div className="relative w-24 h-24 rounded-lg border-2 border-slate-200 overflow-hidden">
-                  <img
+                  <Image
                     src={logoPreview}
                     alt="Logo preview"
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
                   />
                   <button
                     type="button"
@@ -290,7 +292,7 @@ export default function NewRestaurantForm() {
                       setLogoFile(null)
                       setLogoPreview(null)
                     }}
-                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full"
+                    className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full z-10"
                   >
                     <X className="h-3 w-3" />
                   </button>

@@ -127,6 +127,15 @@ export const translations = {
       created: 'Oluşturulma',
       actions: 'İşlemler',
     },
+    // Landing
+    landing: {
+      features: 'Özellikler',
+      pricing: 'Fiyatlandırma',
+      login: 'Giriş Yap',
+      title: 'Restoranınız İçin Akıllı QR Menü',
+      subtitle: 'Müşterilerinize modern, hızlı ve temassız bir menü deneyimi sunun. AI destekli önerilerle satışlarınızı artırın.',
+      moreInfo: 'Daha Fazla Bilgi',
+    },
   },
   en: {
     // Common
@@ -254,6 +263,15 @@ export const translations = {
       plan: 'Plan',
       created: 'Created',
       actions: 'Actions',
+    },
+    // Landing
+    landing: {
+      features: 'Features',
+      pricing: 'Pricing',
+      login: 'Login',
+      title: 'Smart QR Menu for Your Restaurant',
+      subtitle: 'Offer your customers a modern, fast, and contactless menu experience. Increase sales with AI-powered recommendations.',
+      moreInfo: 'More Info',
     },
   },
 } as const

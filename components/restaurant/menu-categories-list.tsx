@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Edit, Eye, EyeOff, Plus, Trash } from 'lucide-react'
@@ -121,11 +122,14 @@ export default function MenuCategoriesList({ categories, items }: Props) {
                           className="border rounded-lg p-4 hover:border-blue-500 transition-colors dark:border-gray-600"
                         >
                           {item.image_url && (
-                            <img
-                              src={item.image_url}
-                              alt={getName(item)}
-                              className="w-full h-32 object-cover rounded-lg mb-3"
-                            />
+                            <div className="relative w-full h-32 mb-3 rounded-lg overflow-hidden">
+                              <Image
+                                src={item.image_url}
+                                alt={getName(item)}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
                           )}
                           <div className="flex items-start justify-between mb-2">
                             <h4 className="font-semibold dark:text-white">{getName(item)}</h4>

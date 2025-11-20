@@ -6,7 +6,10 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { useToast } from '@/components/ui/use-toast'
-import type { Organization, MenuItem } from '@/lib/supabase/types'
+import type { Database } from '@/lib/supabase/types'
+
+type Restaurant = Database['public']['Tables']['restaurants']['Row']
+type Product = Database['public']['Tables']['products']['Row']
 
 interface Message {
   role: 'user' | 'assistant'
@@ -15,10 +18,10 @@ interface Message {
 }
 
 interface Props {
-  organization: Organization
+  organization: Restaurant
   sessionId: string
   onClose: () => void
-  onAddToCart?: (item: MenuItem) => void
+  onAddToCart?: (item: any) => void
 }
 
 export default function AIAssistantChat({ organization, sessionId, onClose, onAddToCart }: Props) {

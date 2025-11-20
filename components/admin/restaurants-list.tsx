@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   Table,
   TableBody,
@@ -70,11 +71,14 @@ export default function RestaurantsList({ restaurants }: Props) {
               <TableCell>
                 <div className="flex items-center gap-3">
                   {restaurant.logo_url ? (
-                    <img
-                      src={restaurant.logo_url}
-                      alt={restaurant.name}
-                      className="w-10 h-10 rounded-lg object-cover"
-                    />
+                    <div className="relative w-10 h-10 rounded-lg overflow-hidden">
+                      <Image
+                        src={restaurant.logo_url}
+                        alt={restaurant.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
                   ) : (
                     <div className="w-10 h-10 rounded-lg bg-slate-200 flex items-center justify-center">
                       <span className="text-lg font-bold text-slate-600">

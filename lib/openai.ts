@@ -1,5 +1,20 @@
 import OpenAI from 'openai'
-import type { MenuItem, Organization } from '@/lib/supabase/types'
+import type { Database } from '@/lib/supabase/types'
+
+type Restaurant = Database['public']['Tables']['restaurants']['Row']
+type Product = Database['public']['Tables']['products']['Row']
+
+interface MenuItem extends Omit<Product, 'allergens'> {
+    name: string
+    description: string | null
+    available: boolean
+    allergens: string[]
+}
+
+interface Organization extends Restaurant {
+    // Any specific properties if needed, but using Restaurant type should be fine
+    // But the code uses organization.name, description, address which are in Restaurant
+}
 
 // Helper to get OpenAI client with custom or default API key
 export function getOpenAIClient(customApiKey?: string): OpenAI | null {

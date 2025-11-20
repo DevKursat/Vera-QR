@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/components/ui/use-toast'
+import Image from 'next/image'
 import { Loader2, Upload, X } from 'lucide-react'
 
 interface Category {
@@ -272,10 +273,11 @@ export default function MenuItemForm({ organizationId, categories, item }: Props
           <div className="flex items-start gap-4">
             {imagePreview ? (
               <div className="relative w-48 h-48 rounded-lg border-2 border-slate-200 overflow-hidden">
-                <img
+                <Image
                   src={imagePreview}
                   alt="Preview"
-                  className="w-full h-full object-cover"
+                  fill
+                  className="object-cover"
                 />
                 <button
                   type="button"
