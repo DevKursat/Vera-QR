@@ -79,22 +79,18 @@ export async function getCurrentUser() {
 // Check if user is platform admin
 export async function isPlatformAdmin() {
   const user = await getCurrentUser()
-  console.log('🔍 isPlatformAdmin - Current user:', user?.id, user?.email)
   
   if (!user) {
-    console.log('❌ isPlatformAdmin - No user found')
     return false
   }
   
   const supabase = createClient()
-  const { data, error } = await (supabase
+  const { data } = await supabase
     .from('profiles')
-    .select('id, role')
+    .select('role')
     .eq('id', user.id)
     .eq('role', 'platform_admin')
-    .maybeSingle() as any)
-  
-  console.log('🔍 isPlatformAdmin - Query result:', { data, error })
+    .maybeSingle()
   
   return !!data
 }
@@ -110,11 +106,11 @@ export async function getRestaurantAdminInfo() {
   if (!user) return null
   
   const supabase = createClient()
-  const { data } = await (supabase
+  const { data } = await supabase
     .from('restaurant_admins')
     .select('*, restaurant:restaurants(*)')
     .eq('profile_id', user.id)
-    .maybeSingle() as any)
+    .maybeSingle()
   
   return data
 }
@@ -129,12 +125,12 @@ export async function hasRestaurantAccess(restaurantId: string) {
   
   // Check if restaurant admin for this restaurant
   const supabase = createClient()
-  const { data } = await (supabase
+  const { data } = await supabase
     .from('restaurant_admins')
     .select('id')
     .eq('profile_id', user.id)
     .eq('restaurant_id', restaurantId)
-    .maybeSingle() as any)
+    .maybeSingle()
   
   return !!data
 }
@@ -145,11 +141,11 @@ export async function getUserRole(): Promise<'platform_admin' | 'restaurant_admi
   if (!user) return null
   
   const supabase = createClient()
-  const { data } = await (supabase
+  const { data } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .maybeSingle() as any)
+    .maybeSingle()
   
-  return data?.role as any || null
+  return data?.role || null
 }

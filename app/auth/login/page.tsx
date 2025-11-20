@@ -60,29 +60,29 @@ export default function LoginPage() {
         return
       }
 
-      // Check platform admin table
-      const { data: platformAdmin } = await supabase
-        .from('platform_admins')
-        .select('id')
-        .eq('user_id', data.user.id)
+      // Check user profile and role
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
         .maybeSingle()
 
-      if (platformAdmin) {
+      if (profile) {
         toast({ title: t.auth.loginSuccess })
-        router.push('/admin/dashboard')
-        return
-      }
 
-      // Check restaurant admin table
-      const { data: restaurantAdmin } = await supabase
-        .from('admin_users')
-        .select('id, organization_id')
-        .eq('user_id', data.user.id)
-        .maybeSingle()
-
-      if (restaurantAdmin) {
-        toast({ title: t.auth.loginSuccess })
-        router.push('/dashboard')
+        if (profile.role === 'platform_admin') {
+          router.push('/admin/dashboard')
+        } else if (profile.role === 'restaurant_admin') {
+          router.push('/dashboard')
+        } else {
+          // Handle other roles or default
+           toast({
+            variant: 'destructive',
+            title: t.auth.unauthorized,
+            description: t.auth.unauthorizedMessage,
+          })
+          await supabase.auth.signOut()
+        }
         return
       }
 
