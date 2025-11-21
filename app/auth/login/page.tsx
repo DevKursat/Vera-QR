@@ -70,6 +70,9 @@ export default function LoginPage() {
       if (profile) {
         toast({ title: t.auth.loginSuccess })
 
+        // Refresh router to update server components with new auth state
+        router.refresh()
+
         if (profile.role === 'platform_admin') {
           router.push('/admin/dashboard')
         } else if (profile.role === 'restaurant_admin') {
