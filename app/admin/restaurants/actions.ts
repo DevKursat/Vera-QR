@@ -57,17 +57,26 @@ export async function updateRestaurantAdmin(restaurantId: string, email: string,
     const supabase = createClient()
 
     // Get restaurant admin relation
+    // Use maybeSingle to avoid error if multiple admins exist (just take the first one for now)
+    // Ideally we should list all admins, but requirement implies "The" admin.
     const { data: adminRel, error: relError } = await supabase
         .from('restaurant_admins')
         .select('profile_id')
         .eq('restaurant_id', restaurantId)
-        .single()
+        .limit(1)
+        .maybeSingle()
 
-    if (relError || !adminRel) {
-        // If no admin exists, we might need to create one, but for "Update" logic
-        // we assume one exists or we are updating the "Primary" admin.
-        // For now, return error if not found.
-        return { error: 'Restaurant admin not found' }
+    if (relError) {
+        console.error("Error finding restaurant admin:", relError)
+        return { error: 'Database error finding admin' }
+    }
+
+    if (!adminRel) {
+        // If no relation found in restaurant_admins, try fallback:
+        // Find ANY profile that has role 'restaurant_admin' created recently?
+        // Or just return clearer error.
+        // It's possible the migration didn't create the link for manually added tests.
+        return { error: 'No admin account linked to this restaurant. Please create a new admin user manually.' }
     }
 
     const profileId = adminRel.profile_id
