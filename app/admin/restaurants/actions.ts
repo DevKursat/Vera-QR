@@ -120,7 +120,9 @@ export async function createRestaurantWithAdmin(data: any) {
     }
 
     // 4. Link Admin to Restaurant
-    const { error: linkError } = await supabase
+    // Use supabaseAdmin for this insert to bypass RLS policies if necessary
+    // (though public insert might be allowed, linking is sensitive)
+    const { error: linkError } = await supabaseAdmin
       .from('restaurant_admins')
       .insert({
         profile_id: userId,
@@ -128,7 +130,10 @@ export async function createRestaurantWithAdmin(data: any) {
         permissions: ['all']
       })
 
-    if (linkError) throw new Error(`Yönetici yetkisi verilemedi: ${linkError.message}`)
+    if (linkError) {
+       console.error("Link Error:", linkError)
+       throw new Error(`Yönetici yetkisi verilemedi: ${linkError.message}`)
+    }
 
     // 5. Create AI Config
     await supabase.from('ai_configs').insert({
@@ -248,7 +253,7 @@ export async function updateRestaurantAdmin(restaurantId: string, email: string,
                 .from('profiles')
                 .select('id')
                 .eq('email', email)
-                .single()
+                .maybeSingle()
 
             if (userProfile) {
                 // Create the link
@@ -263,10 +268,14 @@ export async function updateRestaurantAdmin(restaurantId: string, email: string,
                 if (!linkError) {
                    // Success! Continue with update logic using this ID
                    return await updateRestaurantAdmin(restaurantId, email, password)
+                } else {
+                   console.error("Auto-fix link error:", linkError)
                 }
+            } else {
+                console.error("Auto-fix failed: User profile not found for email", email)
             }
         }
-        return { error: 'No admin account linked to this restaurant. Please create a new admin user manually.' }
+        return { error: 'No admin account linked to this restaurant. Please enter the admin email to link automatically.' }
     }
 
     const profileId = adminRel.profile_id
