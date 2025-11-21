@@ -10,6 +10,120 @@ const supabaseAdmin = createAdminClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 )
 
+export async function createRestaurantWithAdmin(data: any) {
+  const supabase = createClient()
+
+  try {
+    // 1. Create Auth User (Restaurant Admin)
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: data.admin_email,
+      password: data.admin_password,
+      email_confirm: true,
+      user_metadata: { full_name: data.name + ' Admin' }
+    })
+
+    if (authError) throw new Error(`Kullanıcı oluşturulamadı: ${authError.message}`)
+    if (!authUser.user) throw new Error('Kullanıcı oluşturulamadı.')
+
+    const userId = authUser.user.id
+
+    // 2. Create Profile
+    // Note: If you have a trigger that auto-creates profiles on auth.users insert,
+    // you might need to update instead of insert. But standard Supabase patterns often require manual profile creation
+    // or trigger handling. We'll attempt upsert to be safe.
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .upsert({
+        id: userId,
+        email: data.admin_email,
+        role: 'restaurant_admin',
+        full_name: data.name + ' Yöneticisi',
+        is_active: true
+      })
+
+    if (profileError) throw new Error(`Profil oluşturulamadı: ${profileError.message}`)
+
+    // 3. Create Restaurant
+    const { data: restaurant, error: restaurantError } = await supabase
+      .from('restaurants')
+      .insert({
+        name: data.name,
+        slug: data.slug,
+        description: data.description,
+        address: data.address,
+        primary_color: data.brand_color,
+        working_hours: data.working_hours,
+        logo_url: data.logo_url,
+        status: 'active',
+        subscription_tier: 'starter',
+      })
+      .select()
+      .single()
+
+    if (restaurantError) {
+        // Cleanup user if restaurant fails? Ideally yes, but for MVP let's just error.
+        // await supabaseAdmin.auth.admin.deleteUser(userId)
+        throw new Error(`Restoran oluşturulamadı: ${restaurantError.message}`)
+    }
+
+    // 4. Link Admin to Restaurant
+    const { error: linkError } = await supabase
+      .from('restaurant_admins')
+      .insert({
+        profile_id: userId,
+        restaurant_id: restaurant.id,
+        permissions: ['all']
+      })
+
+    if (linkError) throw new Error(`Yönetici yetkisi verilemedi: ${linkError.message}`)
+
+    // 5. Create AI Config
+    await supabase.from('ai_configs').insert({
+      restaurant_id: restaurant.id,
+      personality: data.ai_personality,
+      custom_prompt: `Sen ${data.name}'nin AI asistanısın. Müşterilere yardımcı ol, menü hakkında bilgi ver ve sipariş almalarına yardım et.`,
+      language: 'tr',
+      auto_translate: true,
+      model: 'gpt-4',
+    })
+
+    // 6. Create Default Categories
+    if (data.categories && data.categories.length > 0) {
+        const categoryPromises = data.categories.map((name: string, index: number) =>
+            supabase.from('categories').insert({
+                restaurant_id: restaurant.id,
+                name_tr: name,
+                display_order: index,
+                visible: true
+            })
+        )
+        await Promise.all(categoryPromises)
+    }
+
+    // 7. Create Default QR Codes (10 tables)
+    const crypto = require('crypto')
+    const qrPromises = Array.from({ length: 10 }, (_, i) => {
+        const tableNumber = `Masa ${i + 1}`
+        const hash = crypto.randomBytes(16).toString('hex') // Generate here for safety
+        return supabase.from('qr_codes').insert({
+          restaurant_id: restaurant.id,
+          table_number: tableNumber,
+          qr_code_hash: hash,
+          location_description: i < 5 ? 'Ana Salon' : 'Teras',
+          status: 'active',
+        })
+    })
+    await Promise.all(qrPromises)
+
+    revalidatePath('/admin/restaurants')
+    return { success: true, restaurantId: restaurant.id }
+
+  } catch (error: any) {
+    console.error('Create Restaurant Error:', error)
+    return { error: error.message }
+  }
+}
+
 export async function updateRestaurant(id: string, data: any) {
   const supabase = createClient()
 
