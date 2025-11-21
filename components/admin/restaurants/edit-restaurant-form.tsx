@@ -287,8 +287,8 @@ export default function EditRestaurantForm({ restaurant }: { restaurant: any }) 
                         onClick={() => setFormData({ ...formData, ai_personality: option.value })}
                         className={`p-4 rounded-lg border-2 text-left transition-all ${
                         formData.ai_personality === option.value
-                            ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
-                            : 'border-slate-200 dark:border-slate-700'
+                            ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-white'
+                            : 'border-slate-200 dark:border-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600'
                         }`}
                     >
                         <div className="font-semibold">{option.label}</div>
@@ -321,12 +321,22 @@ export default function EditRestaurantForm({ restaurant }: { restaurant: any }) 
             <CardContent className="space-y-4">
                 <div className="space-y-2">
                     <Label>Yönetici Email</Label>
+                    {!adminInfo && (
+                        <div className="mb-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md flex items-start gap-2">
+                            <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 mt-0.5" />
+                            <div className="text-sm text-yellow-800 dark:text-yellow-200">
+                                <p className="font-semibold">Yönetici Bağlantısı Eksik</p>
+                                <p>Bu restorana bağlı bir yönetici hesabı bulunamadı. Lütfen yöneticinin email adresini girin ve &quot;Güncelle&quot; butonuna basarak bağlantıyı otomatik onarın.</p>
+                            </div>
+                        </div>
+                    )}
                     <div className="relative">
                         <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
                         <Input
                             className="pl-10"
                             value={formData.admin_email}
                             onChange={(e) => setFormData({...formData, admin_email: e.target.value})}
+                            placeholder="admin@ornek.com"
                         />
                     </div>
                 </div>
