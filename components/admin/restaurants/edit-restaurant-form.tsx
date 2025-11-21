@@ -76,11 +76,16 @@ export default function EditRestaurantForm({ restaurant }: { restaurant: any }) 
         .from('restaurant_admins')
         .select('profiles(email)')
         .eq('restaurant_id', restaurant.id)
-        .single()
+        .maybeSingle()
 
       if (adminData?.profiles) {
         setAdminInfo(adminData.profiles)
         setFormData(prev => ({ ...prev, admin_email: (adminData.profiles as any).email }))
+      } else {
+        // Fallback: If no link exists, we can't show the email automatically.
+        // We might want to clear it or show a placeholder?
+        // For now, let's just leave it empty so the admin can type it in to fix the link.
+        console.warn('No admin linked to this restaurant yet.')
       }
     }
     fetchData()

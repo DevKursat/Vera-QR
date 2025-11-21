@@ -239,10 +239,33 @@ export async function updateRestaurantAdmin(restaurantId: string, email: string,
     }
 
     if (!adminRel) {
-        // If no relation found in restaurant_admins, try fallback:
-        // Find ANY profile that has role 'restaurant_admin' created recently?
-        // Or just return clearer error.
-        // It's possible the migration didn't create the link for manually added tests.
+        // Auto-fix: If no admin is linked, try to link the user by email if provided
+        if (email) {
+            console.log(`No admin link found for restaurant ${restaurantId}. Attempting auto-fix with email: ${email}`)
+
+            // Find user ID by email
+            const { data: userProfile } = await supabaseAdmin
+                .from('profiles')
+                .select('id')
+                .eq('email', email)
+                .single()
+
+            if (userProfile) {
+                // Create the link
+                const { error: linkError } = await supabaseAdmin
+                    .from('restaurant_admins')
+                    .insert({
+                        profile_id: userProfile.id,
+                        restaurant_id: restaurantId,
+                        permissions: ['all']
+                    })
+
+                if (!linkError) {
+                   // Success! Continue with update logic using this ID
+                   return await updateRestaurantAdmin(restaurantId, email, password)
+                }
+            }
+        }
         return { error: 'No admin account linked to this restaurant. Please create a new admin user manually.' }
     }
 
