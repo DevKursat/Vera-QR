@@ -178,7 +178,8 @@ export async function createRestaurantWithAdmin(data: any) {
 
   } catch (error: any) {
     console.error('Create Restaurant Error:', error)
-    return { error: error.message }
+    // Return explicit error to UI
+    return { error: error.message || JSON.stringify(error) }
   }
 }
 
@@ -225,12 +226,14 @@ export async function updateRestaurant(id: string, data: any) {
 }
 
 export async function updateRestaurantAdmin(restaurantId: string, email: string, password?: string) {
+    console.log('updateRestaurantAdmin called', { restaurantId, email: email ? '***' : 'missing' })
+
     // 1. Find the admin profile for this restaurant
     const supabase = createClient()
 
     // Get restaurant admin relation
-    // Use maybeSingle to avoid error if multiple admins exist (just take the first one for now)
-    // Ideally we should list all admins, but requirement implies "The" admin.
+    let profileId: string | null = null
+
     const { data: adminRel, error: relError } = await supabase
         .from('restaurant_admins')
         .select('profile_id')
@@ -243,66 +246,77 @@ export async function updateRestaurantAdmin(restaurantId: string, email: string,
         return { error: 'Database error finding admin' }
     }
 
-    if (!adminRel) {
-        // Auto-fix: If no admin is linked, try to link the user by email if provided
-        if (email) {
-            console.log(`No admin link found for restaurant ${restaurantId}. Attempting auto-fix with email: ${email}`)
+    if (adminRel) {
+        profileId = adminRel.profile_id
+    } else {
+        // Auto-fix flow
+        if (!email) {
+             return { error: 'No admin account linked to this restaurant. Please enter the admin email to link automatically.' }
+        }
 
-            // Find user ID by email
-            const { data: userProfile } = await supabaseAdmin
-                .from('profiles')
-                .select('id')
-                .eq('email', email)
-                .maybeSingle()
+        console.log(`No admin link found for restaurant ${restaurantId}. Attempting auto-fix with email: ${email}`)
 
-            let userIdToLink = userProfile?.id
+        // 1. Find User ID
+        let userIdToLink: string | null = null
 
-            // If profile not found, try to find in Auth Users and create profile
-            if (!userIdToLink) {
-                 // Try to list users (filtered manually if needed, or by email if SDK supports)
-                 // Note: supabaseAdmin.auth.admin.listUsers() is pagination based.
-                 // We can also try createUser and catch 'already registered' to get ID, but we need ID.
-                 // Best bet for recovery: Try to find user by list
-                 const { data: users } = await supabaseAdmin.auth.admin.listUsers()
-                 const found = users?.users.find(u => u.email === email)
+        // Try Profiles
+        const { data: userProfile } = await supabaseAdmin
+            .from('profiles')
+            .select('id')
+            .eq('email', email)
+            .maybeSingle()
 
-                 if (found) {
-                    userIdToLink = found.id
-                    // Create missing profile
-                    await supabaseAdmin.from('profiles').upsert({
-                        id: userIdToLink,
-                        email: email,
-                        role: 'restaurant_admin',
-                        full_name: 'Restoran Yöneticisi',
-                        is_active: true
-                    })
-                 }
-            }
+        if (userProfile) {
+            userIdToLink = userProfile.id
+        } else {
+            // Try Auth Users (Nuclear option)
+            const { data: users } = await supabaseAdmin.auth.admin.listUsers()
+            const found = users?.users.find(u => u.email === email)
 
-            if (userIdToLink) {
-                // Create the link
-                const { error: linkError } = await supabaseAdmin
-                    .from('restaurant_admins')
-                    .insert({
-                        profile_id: userIdToLink,
-                        restaurant_id: restaurantId,
-                        permissions: ['all']
-                    })
-
-                if (!linkError) {
-                   // Success! Continue with update logic using this ID
-                   return await updateRestaurantAdmin(restaurantId, email, password)
-                } else {
-                   console.error("Auto-fix link error:", linkError)
-                }
-            } else {
-                console.error("Auto-fix failed: User profile not found for email", email)
+            if (found) {
+                userIdToLink = found.id
+                // Create missing profile
+                await supabaseAdmin.from('profiles').upsert({
+                    id: userIdToLink,
+                    email: email,
+                    role: 'restaurant_admin',
+                    full_name: 'Restoran Yöneticisi',
+                    is_active: true
+                })
             }
         }
-        return { error: 'No admin account linked to this restaurant. Please enter the admin email to link automatically.' }
+
+        if (!userIdToLink) {
+             return { error: `Auto-fix failed: User profile not found for email ${email}` }
+        }
+
+        // 2. Create Link
+        // We use upsert to be safe against race conditions (though simple insert is fine if unique constraint handles it)
+        const { error: linkError } = await supabaseAdmin
+            .from('restaurant_admins')
+            .upsert({
+                profile_id: userIdToLink,
+                restaurant_id: restaurantId,
+                permissions: ['all']
+            }) // onConflict do update is default behavior if PK matches, but here PK is compound probably?
+               // Actually we just want to ignore if exists. Insert is better but catch error.
+               // Let's stick to insert and catch.
+
+        if (linkError) {
+            // If error is duplicate key, that's actually good - means it exists now.
+            if (!linkError.message.includes('duplicate key') && !linkError.message.includes('unique constraint')) {
+                 console.error("Auto-fix link error:", linkError)
+                 return { error: `Auto-fix failed (Link Error): ${linkError.message}` }
+            }
+        }
+
+        // 3. Set profileId to proceed with updates
+        profileId = userIdToLink
     }
 
-    const profileId = adminRel.profile_id
+    if (!profileId) {
+        return { error: "Unexpected error: Profile ID could not be determined." }
+    }
 
     // 2. Update Email/Password via Admin API
     const updates: any = {}

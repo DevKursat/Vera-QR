@@ -127,9 +127,11 @@ export default function EditRestaurantForm({ restaurant }: { restaurant: any }) 
   const handleUpdateAdmin = async () => {
     setIsLoading(true)
     try {
+      console.log('Sending admin update:', { email: formData.admin_email }) // Debug log
+
       const result = await updateRestaurantAdmin(
         restaurant.id,
-        formData.admin_email,
+        formData.admin_email?.trim(), // Ensure no whitespace
         formData.admin_password || undefined
       )
 
