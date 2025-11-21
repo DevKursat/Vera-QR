@@ -23,10 +23,10 @@ import {
 import { useApp } from '@/lib/app-context'
 
 interface Props {
-  organization: any // Actually restaurant object now
+  restaurant: any
 }
 
-export default function RestaurantSidebar({ organization }: Props) {
+export default function RestaurantSidebar({ restaurant }: Props) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const pathname = usePathname()
   const { t } = useApp()
@@ -71,11 +71,11 @@ export default function RestaurantSidebar({ organization }: Props) {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center gap-3 h-16 px-6 border-b border-slate-200 dark:border-border">
-            {organization?.logo_url ? (
+            {restaurant?.logo_url ? (
               <div className="relative w-10 h-10 rounded-lg overflow-hidden">
                 <Image
-                  src={organization.logo_url}
-                  alt={organization.name}
+                  src={restaurant.logo_url}
+                  alt={restaurant.name}
                   fill
                   className="object-cover"
                   sizes="40px"
@@ -84,13 +84,13 @@ export default function RestaurantSidebar({ organization }: Props) {
             ) : (
               <div
                 className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold"
-                style={{ backgroundColor: organization?.primary_color || '#3B82F6' }}
+                style={{ backgroundColor: restaurant?.primary_color || '#3B82F6' }}
               >
-                {organization?.name?.charAt(0) || 'R'}
+                {restaurant?.name?.charAt(0) || 'R'}
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <h1 className="text-sm font-bold truncate dark:text-white">{organization?.name}</h1>
+              <h1 className="text-sm font-bold truncate dark:text-white">{restaurant?.name}</h1>
               <p className="text-xs text-slate-500 dark:text-slate-400 truncate">Restoran Paneli</p>
             </div>
           </div>
@@ -112,7 +112,7 @@ export default function RestaurantSidebar({ organization }: Props) {
                   )}
                   style={
                     isActive
-                      ? { backgroundColor: organization?.primary_color || '#3B82F6' }
+                      ? { backgroundColor: restaurant?.primary_color || '#3B82F6' }
                       : {}
                   }
                 >

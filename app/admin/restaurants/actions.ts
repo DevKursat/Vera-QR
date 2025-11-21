@@ -14,34 +14,87 @@ export async function createRestaurantWithAdmin(data: any) {
   const supabase = createClient()
 
   try {
-    // 1. Create Auth User (Restaurant Admin)
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: data.admin_email,
-      password: data.admin_password,
-      email_confirm: true,
-      user_metadata: { full_name: data.name + ' Admin' }
-    })
+    let userId: string
 
-    if (authError) throw new Error(`Kullanıcı oluşturulamadı: ${authError.message}`)
-    if (!authUser.user) throw new Error('Kullanıcı oluşturulamadı.')
-
-    const userId = authUser.user.id
-
-    // 2. Create Profile
-    // Note: If you have a trigger that auto-creates profiles on auth.users insert,
-    // you might need to update instead of insert. But standard Supabase patterns often require manual profile creation
-    // or trigger handling. We'll attempt upsert to be safe.
-    const { error: profileError } = await supabaseAdmin
+    // 1. Try to find existing profile (Scalable approach)
+    // Since profiles are 1:1 with auth users, this helps us find the ID without listing all users
+    const { data: existingProfile } = await supabaseAdmin
       .from('profiles')
-      .upsert({
-        id: userId,
-        email: data.admin_email,
-        role: 'restaurant_admin',
-        full_name: data.name + ' Yöneticisi',
-        is_active: true
-      })
+      .select('id, role')
+      .eq('email', data.admin_email)
+      .single()
 
-    if (profileError) throw new Error(`Profil oluşturulamadı: ${profileError.message}`)
+    if (existingProfile) {
+      userId = existingProfile.id
+      console.log(`User profile already exists (${data.admin_email}), linking...`)
+
+      // Update password if provided
+      if (data.admin_password) {
+        await supabaseAdmin.auth.admin.updateUserById(userId, {
+          password: data.admin_password
+        })
+      }
+
+      // Update role if needed (don't downgrade platform_admin)
+      if (existingProfile.role !== 'platform_admin') {
+        await supabaseAdmin
+          .from('profiles')
+          .update({ role: 'restaurant_admin' })
+          .eq('id', userId)
+      }
+
+    } else {
+      // No profile found, try to create user
+      // If auth user exists but profile doesn't (rare edge case), createUser will fail
+      try {
+        const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+          email: data.admin_email,
+          password: data.admin_password,
+          email_confirm: true,
+          user_metadata: { full_name: data.name + ' Admin' }
+        })
+
+        if (authError) throw authError
+        if (!authUser.user) throw new Error('Kullanıcı oluşturulamadı.')
+
+        userId = authUser.user.id
+      } catch (error: any) {
+        // If error is "User already registered" but profile didn't exist
+        if (error.message?.includes('already been registered') || error.status === 422) {
+          console.log('User exists in Auth but not Profile. Attempting recovery...')
+          // Fallback: We must find the ID. Since we can't query by email easily without listUsers
+          // and we want to avoid listUsers, we're in a tight spot.
+          // However, for this specific edge case, we can try to fetch the user by list (filtered)
+          // Note: supabase-js admin.listUsers() does not support email filter.
+          // We will assume this edge case is rare enough or manual intervention needed,
+          // OR we accept the risk of listUsers just for this error catch block.
+
+          const { data: users } = await supabaseAdmin.auth.admin.listUsers()
+          const found = users?.users.find(u => u.email === data.admin_email)
+
+          if (found) {
+            userId = found.id
+          } else {
+             throw new Error('Kullanıcı zaten kayıtlı fakat profili bulunamadı ve erişilemiyor.')
+          }
+        } else {
+          throw error
+        }
+      }
+
+      // Ensure Profile Exists
+      const { error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .upsert({
+          id: userId,
+          email: data.admin_email,
+          role: 'restaurant_admin',
+          full_name: data.name + ' Yöneticisi',
+          is_active: true
+        })
+
+      if (profileError) throw new Error(`Profil oluşturulamadı: ${profileError.message}`)
+    }
 
     // 3. Create Restaurant
     const { data: restaurant, error: restaurantError } = await supabase
