@@ -287,8 +287,8 @@ export default function EditRestaurantForm({ restaurant }: { restaurant: any }) 
                         onClick={() => setFormData({ ...formData, ai_personality: option.value })}
                         className={`p-4 rounded-lg border-2 text-left transition-all ${
                         formData.ai_personality === option.value
-                            ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
-                            : 'border-slate-200 dark:border-slate-700'
+                            ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-white'
+                            : 'border-slate-200 dark:border-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-600'
                         }`}
                     >
                         <div className="font-semibold">{option.label}</div>

@@ -255,12 +255,36 @@ export async function updateRestaurantAdmin(restaurantId: string, email: string,
                 .eq('email', email)
                 .maybeSingle()
 
-            if (userProfile) {
+            let userIdToLink = userProfile?.id
+
+            // If profile not found, try to find in Auth Users and create profile
+            if (!userIdToLink) {
+                 // Try to list users (filtered manually if needed, or by email if SDK supports)
+                 // Note: supabaseAdmin.auth.admin.listUsers() is pagination based.
+                 // We can also try createUser and catch 'already registered' to get ID, but we need ID.
+                 // Best bet for recovery: Try to find user by list
+                 const { data: users } = await supabaseAdmin.auth.admin.listUsers()
+                 const found = users?.users.find(u => u.email === email)
+
+                 if (found) {
+                    userIdToLink = found.id
+                    // Create missing profile
+                    await supabaseAdmin.from('profiles').upsert({
+                        id: userIdToLink,
+                        email: email,
+                        role: 'restaurant_admin',
+                        full_name: 'Restoran Yöneticisi',
+                        is_active: true
+                    })
+                 }
+            }
+
+            if (userIdToLink) {
                 // Create the link
                 const { error: linkError } = await supabaseAdmin
                     .from('restaurant_admins')
                     .insert({
-                        profile_id: userProfile.id,
+                        profile_id: userIdToLink,
                         restaurant_id: restaurantId,
                         permissions: ['all']
                     })
