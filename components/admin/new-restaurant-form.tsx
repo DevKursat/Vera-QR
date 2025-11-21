@@ -10,10 +10,11 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/components/ui/use-toast'
-import { Loader2, Upload, X } from 'lucide-react'
+import { Loader2, Upload, X, Lock, Mail } from 'lucide-react'
 import { slugify } from '@/lib/utils'
 import GooglePlacesAutocomplete from './google-places-autocomplete'
 import SlugInput from '@/components/admin/slug-input'
+import { createRestaurantWithAdmin } from '@/app/admin/restaurants/actions'
 
 const BRAND_COLORS = [
   '#000000', '#EF4444', '#F59E0B', '#10B981', '#3B82F6', 
@@ -54,6 +55,10 @@ export default function NewRestaurantForm() {
     ai_personality: 'professional',
     openai_api_key: '',
     categories: ['Yemek', 'İçecek', 'Tatlı'],
+
+    // Admin User
+    admin_email: '',
+    admin_password: '',
   })
 
   const handleNameChange = (name: string) => {
@@ -104,89 +109,28 @@ export default function NewRestaurantForm() {
     setIsLoading(true)
 
     try {
-      // Check if slug is available
-      const { data: existing } = await supabase
-        .from('restaurants')
-        .select('id')
-        .eq('slug', formData.slug)
-        .maybeSingle()
-
-      if (existing) {
-        toast({
-          variant: 'destructive',
-          title: 'Hata',
-          description: 'Bu slug zaten kullanılıyor. Lütfen farklı bir isim deneyin.',
-        })
-        setIsLoading(false)
-        return
+      // 1. Upload logo first if exists
+      let logoUrl = null
+      if (logoFile) {
+        // Temporary ID for logo path, we'll rename or just use it.
+        // Since we don't have restaurant ID yet, we use timestamp.
+        const tempId = `temp-${Date.now()}`
+        logoUrl = await uploadLogo(tempId)
       }
 
-      // Create restaurant
-      const { data: restaurant, error: restaurantError } = await (supabase
-        .from('restaurants')
-        .insert({
-          name: formData.name,
-          slug: formData.slug,
-          description: formData.description,
-          address: formData.address,
-          primary_color: formData.brand_color,
-          working_hours: formData.working_hours,
-          status: 'active',
-          subscription_tier: 'starter',
-        } as any)
-        .select()
-        .single() as any)
-
-      if (restaurantError) throw restaurantError
-
-      // Upload logo if provided
-      if (logoFile && restaurant) {
-        const logoUrl = await uploadLogo(restaurant.id)
-        if (logoUrl) {
-          await (supabase
-            .from('restaurants') as any)
-            .update({ logo_url: logoUrl })
-            .eq('id', restaurant.id)
-        }
-      }
-
-      // Create AI config
-      await (supabase.from('ai_configs').insert({
-        restaurant_id: restaurant.id,
-        personality: formData.ai_personality,
-        custom_prompt: `Sen ${formData.name}'nin AI asistanısın. Müşterilere yardımcı ol, menü hakkında bilgi ver ve sipariş almalarına yardım et.`,
-        language: 'tr',
-        auto_translate: true,
-        model: 'gpt-4',
-      } as any) as any)
-
-      // Create default categories
-      const categoryPromises = formData.categories.map((categoryName, index) =>
-        (supabase.from('categories').insert({
-          restaurant_id: restaurant.id,
-          name_tr: categoryName,
-          display_order: index,
-          visible: true,
-        } as any) as any)
-      )
-      await Promise.all(categoryPromises)
-
-      // Create default QR codes (10 tables)
-      const qrCodePromises = Array.from({ length: 10 }, (_, i) => {
-        const tableNumber = `Masa ${i + 1}`
-        return (supabase.from('qr_codes').insert({
-          restaurant_id: restaurant.id,
-          table_number: tableNumber,
-          qr_code_hash: `${formData.slug}-${tableNumber.toLowerCase().replace(' ', '-')}-${Date.now()}`,
-          location_description: i < 5 ? 'Ana Salon' : i < 8 ? 'Teras' : 'Özel Oda',
-          status: 'active',
-        } as any) as any)
+      // 2. Call Server Action
+      const result = await createRestaurantWithAdmin({
+        ...formData,
+        logo_url: logoUrl
       })
-      await Promise.all(qrCodePromises)
+
+      if (result.error) {
+        throw new Error(result.error)
+      }
 
       toast({
         title: 'Başarılı!',
-        description: `${formData.name} başarıyla oluşturuldu.`,
+        description: `${formData.name} ve yönetici hesabı başarıyla oluşturuldu.`,
       })
 
       router.push('/admin/restaurants')
@@ -254,6 +198,54 @@ export default function NewRestaurantForm() {
             <p className="text-xs text-muted-foreground">
               Google Maps ile ara veya manuel olarak girin
             </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Admin Account */}
+      <Card className="border-blue-200 dark:border-blue-900/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
+            <Lock className="h-5 w-5" />
+            Yönetici Hesabı
+          </CardTitle>
+          <CardDescription>
+            Restoran yöneticisi için giriş bilgilerini belirleyin
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="admin_email">E-posta Adresi *</Label>
+            <div className="relative">
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <Input
+                id="admin_email"
+                type="email"
+                className="pl-10"
+                value={formData.admin_email}
+                onChange={(e) => setFormData({ ...formData, admin_email: e.target.value })}
+                placeholder="yonetici@restoran.com"
+                required
+                disabled={isLoading}
+                />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="admin_password">Şifre *</Label>
+            <div className="relative">
+                <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <Input
+                id="admin_password"
+                type="password"
+                className="pl-10"
+                value={formData.admin_password}
+                onChange={(e) => setFormData({ ...formData, admin_password: e.target.value })}
+                placeholder="Güçlü bir şifre belirleyin"
+                minLength={6}
+                required
+                disabled={isLoading}
+                />
+            </div>
           </div>
         </CardContent>
       </Card>
