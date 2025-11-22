@@ -17,7 +17,7 @@ export default async function LoyaltyPage() {
         descriptionKey="pages.loyalty.description"
       />
 
-      <LoyaltyManagement organizationId={adminInfo.organization_id} />
+      <LoyaltyManagement restaurantId={adminInfo.restaurant_id} />
     </div>
   )
 }

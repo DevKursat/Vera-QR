@@ -30,10 +30,10 @@ interface Customer {
 }
 
 interface Props {
-  organizationId: string
+  restaurantId: string
 }
 
-export default function CustomersList({ organizationId }: Props) {
+export default function CustomersList({ restaurantId }: Props) {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -41,14 +41,14 @@ export default function CustomersList({ organizationId }: Props) {
 
   useEffect(() => {
     fetchCustomers()
-  }, [organizationId])
+  }, [restaurantId])
 
   const fetchCustomers = async () => {
     try {
       const { data, error } = await supabase
         .from('loyalty_points')
         .select('*')
-        .eq('restaurant_id', organizationId)
+        .eq('restaurant_id', restaurantId)
         .order('last_transaction_at', { ascending: false, nullsFirst: false })
 
       if (error) throw error

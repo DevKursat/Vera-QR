@@ -12,7 +12,7 @@ export default async function CallsPage() {
   const { data: calls } = await supabase
     .from('table_calls')
     .select('*')
-    .eq('restaurant_id', adminInfo?.organization_id)
+    .eq('restaurant_id', adminInfo?.restaurant_id)
     .order('created_at', { ascending: false })
     .limit(50)
 
@@ -25,7 +25,7 @@ export default async function CallsPage() {
 
       <TableCallsManagement
         initialCalls={calls || []}
-        organizationId={adminInfo!.organization_id}
+        restaurantId={adminInfo!.restaurant_id}
       />
     </div>
   )

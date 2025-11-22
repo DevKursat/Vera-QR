@@ -23,10 +23,10 @@ interface Review {
 }
 
 interface Props {
-  organizationId: string
+  restaurantId: string
 }
 
-export default function ReviewsManagement({ organizationId }: Props) {
+export default function ReviewsManagement({ restaurantId }: Props) {
   const [reviews, setReviews] = useState<Review[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [selectedReview, setSelectedReview] = useState<string | null>(null)
@@ -39,7 +39,7 @@ export default function ReviewsManagement({ organizationId }: Props) {
       const { data, error } = await supabase
         .from('reviews')
         .select('*')
-        .eq('organization_id', organizationId)
+        .eq('restaurant_id', restaurantId)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -54,7 +54,7 @@ export default function ReviewsManagement({ organizationId }: Props) {
     } finally {
       setIsLoading(false)
     }
-  }, [organizationId, toast])
+  }, [restaurantId, toast])
 
   useEffect(() => {
     fetchReviews()
@@ -68,7 +68,7 @@ export default function ReviewsManagement({ organizationId }: Props) {
           event: '*',
           schema: 'public',
           table: 'reviews',
-          filter: `organization_id=eq.${organizationId}`,
+          filter: `restaurant_id=eq.${restaurantId}`,
         },
         () => {
           fetchReviews()
@@ -79,7 +79,7 @@ export default function ReviewsManagement({ organizationId }: Props) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [organizationId, fetchReviews])
+  }, [restaurantId, fetchReviews])
 
   const handleResponse = async (reviewId: string) => {
     if (!responseText.trim()) {

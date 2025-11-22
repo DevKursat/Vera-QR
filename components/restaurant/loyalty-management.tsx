@@ -35,10 +35,10 @@ interface LoyaltyTransaction {
 }
 
 interface Props {
-  organizationId: string
+  restaurantId: string
 }
 
-export default function LoyaltyManagement({ organizationId }: Props) {
+export default function LoyaltyManagement({ restaurantId }: Props) {
   const [customers, setCustomers] = useState<LoyaltyPoint[]>([])
   const [transactions, setTransactions] = useState<LoyaltyTransaction[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -54,7 +54,7 @@ export default function LoyaltyManagement({ organizationId }: Props) {
       const { data: customersData, error: customersError } = await supabase
         .from('loyalty_points')
         .select('*')
-        .eq('organization_id', organizationId)
+        .eq('restaurant_id', restaurantId)
         .order('total_points', { ascending: false })
 
       if (customersError) throw customersError
@@ -70,9 +70,9 @@ export default function LoyaltyManagement({ organizationId }: Props) {
           order_id,
           description,
           created_at,
-          loyalty_points!inner(customer_name, organization_id)
+          loyalty_points!inner(customer_name, restaurant_id)
         `)
-        .eq('loyalty_points.organization_id', organizationId)
+        .eq('loyalty_points.restaurant_id', restaurantId)
         .order('created_at', { ascending: false })
         .limit(50) as any)
 
@@ -97,11 +97,11 @@ export default function LoyaltyManagement({ organizationId }: Props) {
     } finally {
       setIsLoading(false)
     }
-  }, [organizationId, toast])
+  }, [restaurantId, toast])
 
   useEffect(() => {
     fetchData()
-  }, [organizationId, fetchData])
+  }, [restaurantId, fetchData])
 
   const handleAddPoints = async () => {
     if (!selectedCustomer || !pointsToAdd) {

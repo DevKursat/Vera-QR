@@ -33,13 +33,13 @@ interface AnalyticsData {
 }
 
 interface Props {
-  organizationId: string
+  restaurantId: string
   dateRange?: { from: Date; to: Date }
 }
 
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899']
 
-export default function AnalyticsDashboard({ organizationId, dateRange }: Props) {
+export default function AnalyticsDashboard({ restaurantId, dateRange }: Props) {
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const { toast } = useToast()
@@ -51,6 +51,7 @@ export default function AnalyticsDashboard({ organizationId, dateRange }: Props)
       const to = dateRange?.to || new Date()
 
       // Fetch orders with items
+      // Note: using restaurant_id instead of organization_id
       const { data: orders, error: ordersError } = await (supabase
         .from('orders')
         .select(`
@@ -68,7 +69,7 @@ export default function AnalyticsDashboard({ organizationId, dateRange }: Props)
             )
           )
         `)
-        .eq('organization_id', organizationId)
+        .eq('restaurant_id', restaurantId)
         .gte('created_at', from.toISOString())
         .lte('created_at', to.toISOString())
         .in('status', ['preparing', 'ready', 'served']) as any)
@@ -171,11 +172,11 @@ export default function AnalyticsDashboard({ organizationId, dateRange }: Props)
     } finally {
       setIsLoading(false)
     }
-  }, [organizationId, dateRange, toast])
+  }, [restaurantId, dateRange, toast])
 
   useEffect(() => {
     fetchAnalytics()
-  }, [organizationId, dateRange, fetchAnalytics])
+  }, [restaurantId, dateRange, fetchAnalytics])
 
   if (isLoading) {
     return (

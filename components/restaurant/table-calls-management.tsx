@@ -21,7 +21,7 @@ interface TableCall {
 
 interface Props {
   initialCalls: TableCall[]
-  organizationId: string
+  restaurantId: string
 }
 
 const CALL_TYPES = {
@@ -31,7 +31,7 @@ const CALL_TYPES = {
   complaint: 'Şikayet',
 }
 
-export default function TableCallsManagement({ initialCalls, organizationId }: Props) {
+export default function TableCallsManagement({ initialCalls, restaurantId }: Props) {
   const [calls, setCalls] = useState<TableCall[]>(initialCalls)
   const [activeTab, setActiveTab] = useState('pending')
 
@@ -44,7 +44,7 @@ export default function TableCallsManagement({ initialCalls, organizationId }: P
           event: '*',
           schema: 'public',
           table: 'table_calls',
-          filter: `restaurant_id=eq.${organizationId}`,
+          filter: `restaurant_id=eq.${restaurantId}`,
         },
         async (payload) => {
           if (payload.eventType === 'INSERT') {
@@ -72,7 +72,7 @@ export default function TableCallsManagement({ initialCalls, organizationId }: P
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [organizationId])
+  }, [restaurantId])
 
   const updateCallStatus = async (callId: string, newStatus: string) => {
     const { error } = await (supabase
