@@ -227,10 +227,9 @@ export async function updateRestaurant(id: string, data: any) {
 
 // Admin Management
 export async function getRestaurantAdmins(restaurantId: string) {
-  const supabase = createClient()
-
-  // Query restaurant_admins -> profiles
-  const { data, error } = await supabase
+  // Use supabaseAdmin (Service Role) to bypass RLS for the admin panel list
+  // This ensures the list is populated even if RLS policies are strict for the viewer
+  const { data, error } = await supabaseAdmin
     .from('restaurant_admins')
     .select(`
       id,
