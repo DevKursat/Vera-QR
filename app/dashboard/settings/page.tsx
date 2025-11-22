@@ -10,6 +10,8 @@ import { useToast } from '@/components/ui/use-toast'
 import { supabase } from '@/lib/supabase/client'
 import { Settings, Plug, Palette, Globe, Lock } from 'lucide-react'
 import { useApp } from '@/lib/app-context'
+import GeneralSettings from '@/components/restaurant/settings/general-settings'
+import AppearanceSettings from '@/components/restaurant/settings/appearance-settings'
 
 export default function SettingsPage() {
   const { toast } = useToast()
@@ -20,9 +22,9 @@ export default function SettingsPage() {
   const [testingWebhook, setTestingWebhook] = useState(false)
   const [restaurantId, setRestaurantId] = useState<string | null>(null)
 
-  // Load current webhook URL on mount
+  // Load restaurant ID on mount
   useEffect(() => {
-    const loadWebhookUrl = async () => {
+    const loadRestaurantId = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
@@ -43,7 +45,7 @@ export default function SettingsPage() {
           .from('webhook_configs')
           .select('id, url')
           .eq('restaurant_id', restId)
-          .eq('name', 'CRM Integration') // Assuming a default name for the simple UI
+          .eq('name', 'CRM Integration')
           .maybeSingle()
 
         if (webhookData) {
@@ -51,11 +53,11 @@ export default function SettingsPage() {
           setWebhookConfigId(webhookData.id)
         }
       } catch (error) {
-        console.error('Error loading webhook URL:', error)
+        console.error('Error loading settings:', error)
       }
     }
 
-    loadWebhookUrl()
+    loadRestaurantId()
   }, [])
 
   const handleSaveWebhook = async () => {
@@ -297,39 +299,19 @@ export default function SettingsPage() {
         </TabsContent>
 
         <TabsContent value="general" className="space-y-6">
-          <Card className="dark:bg-gray-800 dark:border-gray-700">
-            <CardHeader>
-              <CardTitle className="dark:text-white">
-                {language === 'tr' ? 'Genel Ayarlar' : 'General Settings'}
-              </CardTitle>
-              <CardDescription className="dark:text-gray-400">
-                {language === 'tr' ? 'Restoran genel bilgileri' : 'Restaurant general information'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 dark:text-gray-400">
-                {language === 'tr' ? 'Yakında eklenecek...' : 'Coming soon...'}
-              </p>
-            </CardContent>
-          </Card>
+          {restaurantId ? (
+            <GeneralSettings restaurantId={restaurantId} />
+          ) : (
+            <div className="p-4 text-center">Yükleniyor...</div>
+          )}
         </TabsContent>
 
         <TabsContent value="appearance" className="space-y-6">
-          <Card className="dark:bg-gray-800 dark:border-gray-700">
-            <CardHeader>
-              <CardTitle className="dark:text-white">
-                {language === 'tr' ? 'Görünüm Ayarları' : 'Appearance Settings'}
-              </CardTitle>
-              <CardDescription className="dark:text-gray-400">
-                {language === 'tr' ? 'Menü renkleri ve tema' : 'Menu colors and theme'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 dark:text-gray-400">
-                {language === 'tr' ? 'Yakında eklenecek...' : 'Coming soon...'}
-              </p>
-            </CardContent>
-          </Card>
+          {restaurantId ? (
+            <AppearanceSettings restaurantId={restaurantId} />
+          ) : (
+            <div className="p-4 text-center">Yükleniyor...</div>
+          )}
         </TabsContent>
       </Tabs>
     </div>
