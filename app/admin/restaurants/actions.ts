@@ -225,120 +225,127 @@ export async function updateRestaurant(id: string, data: any) {
   return { success: true }
 }
 
-export async function updateRestaurantAdmin(restaurantId: string, email: string, password?: string) {
-    console.log('updateRestaurantAdmin called', { restaurantId, email: email ? '***' : 'missing' })
+// Admin Management
+export async function getRestaurantAdmins(restaurantId: string) {
+  const supabase = createClient()
 
-    // 1. Find the admin profile for this restaurant
-    const supabase = createClient()
+  // Query restaurant_admins -> profiles
+  const { data, error } = await supabase
+    .from('restaurant_admins')
+    .select(`
+      id,
+      profile_id,
+      created_at,
+      profiles:profiles (
+        id,
+        email,
+        full_name,
+        role,
+        created_at
+      )
+    `)
+    .eq('restaurant_id', restaurantId)
+    .order('created_at', { ascending: false })
 
-    // Get restaurant admin relation
-    let profileId: string | null = null
+  if (error) {
+    console.error('Error fetching restaurant admins:', error)
+    throw new Error(error.message)
+  }
 
-    const { data: adminRel, error: relError } = await supabase
-        .from('restaurant_admins')
-        .select('profile_id')
-        .eq('restaurant_id', restaurantId)
-        .limit(1)
-        .maybeSingle()
+  return data.map(item => ({
+    link_id: item.id,
+    profile: item.profiles
+  }))
+}
 
-    if (relError) {
-        console.error("Error finding restaurant admin:", relError)
-        return { error: 'Database error finding admin' }
+export async function addRestaurantAdmin(restaurantId: string, email: string, name: string, password?: string) {
+  // 1. Find or Create User
+  let userId: string
+
+  // Try Profiles first
+  const { data: existingProfile } = await supabaseAdmin
+    .from('profiles')
+    .select('id, role')
+    .eq('email', email)
+    .maybeSingle()
+
+  if (existingProfile) {
+    userId = existingProfile.id
+    // Update info if needed
+    if (password) {
+        await supabaseAdmin.auth.admin.updateUserById(userId, { password })
     }
+    // If adding as admin, maybe ensure they have role?
+    // Actually, 'restaurant_admin' role is singular per system design usually, but let's assume we keep it.
+    if (existingProfile.role !== 'platform_admin') {
+        await supabaseAdmin.from('profiles').update({ role: 'restaurant_admin' }).eq('id', userId)
+    }
+  } else {
+    // Try Auth Users
+    const { data: users } = await supabaseAdmin.auth.admin.listUsers()
+    const found = users?.users.find(u => u.email === email)
 
-    if (adminRel) {
-        profileId = adminRel.profile_id
+    if (found) {
+        userId = found.id
     } else {
-        // Auto-fix flow
-        if (!email) {
-             return { error: 'No admin account linked to this restaurant. Please enter the admin email to link automatically.' }
-        }
-
-        console.log(`No admin link found for restaurant ${restaurantId}. Attempting auto-fix with email: ${email}`)
-
-        // 1. Find User ID
-        let userIdToLink: string | null = null
-
-        // Try Profiles
-        const { data: userProfile } = await supabaseAdmin
-            .from('profiles')
-            .select('id')
-            .eq('email', email)
-            .maybeSingle()
-
-        if (userProfile) {
-            userIdToLink = userProfile.id
-        } else {
-            // Try Auth Users (Nuclear option)
-            const { data: users } = await supabaseAdmin.auth.admin.listUsers()
-            const found = users?.users.find(u => u.email === email)
-
-            if (found) {
-                userIdToLink = found.id
-                // Create missing profile
-                await supabaseAdmin.from('profiles').upsert({
-                    id: userIdToLink,
-                    email: email,
-                    role: 'restaurant_admin',
-                    full_name: 'Restoran Yöneticisi',
-                    is_active: true
-                })
-            }
-        }
-
-        if (!userIdToLink) {
-             return { error: `Auto-fix failed: User profile not found for email ${email}` }
-        }
-
-        // 2. Create Link
-        // We use upsert to be safe against race conditions (though simple insert is fine if unique constraint handles it)
-        const { error: linkError } = await supabaseAdmin
-            .from('restaurant_admins')
-            .upsert({
-                profile_id: userIdToLink,
-                restaurant_id: restaurantId,
-                permissions: ['all']
-            }) // onConflict do update is default behavior if PK matches, but here PK is compound probably?
-               // Actually we just want to ignore if exists. Insert is better but catch error.
-               // Let's stick to insert and catch.
-
-        if (linkError) {
-            // If error is duplicate key, that's actually good - means it exists now.
-            if (!linkError.message.includes('duplicate key') && !linkError.message.includes('unique constraint')) {
-                 console.error("Auto-fix link error:", linkError)
-                 return { error: `Auto-fix failed (Link Error): ${linkError.message}` }
-            }
-        }
-
-        // 3. Set profileId to proceed with updates
-        profileId = userIdToLink
+        // Create New User
+        const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+            email,
+            password: password || 'tempPass123!', // Provide default or require password
+            email_confirm: true,
+            user_metadata: { full_name: name }
+        })
+        if (createError || !newUser.user) throw new Error(`Kullanıcı oluşturulamadı: ${createError?.message}`)
+        userId = newUser.user.id
     }
 
-    if (!profileId) {
-        return { error: "Unexpected error: Profile ID could not be determined." }
-    }
+    // Ensure Profile
+    await supabaseAdmin.from('profiles').upsert({
+        id: userId,
+        email,
+        full_name: name,
+        role: 'restaurant_admin',
+        is_active: true
+    })
+  }
 
-    // 2. Update Email/Password via Admin API
-    const updates: any = {}
-    if (email) updates.email = email
-    if (password) updates.password = password
+  // 2. Link to Restaurant
+  // Check existing link to avoid duplicates
+  const { data: existingLink } = await supabaseAdmin
+    .from('restaurant_admins')
+    .select('id')
+    .eq('restaurant_id', restaurantId)
+    .eq('profile_id', userId)
+    .maybeSingle()
 
-    if (Object.keys(updates).length > 0) {
-        const { data: user, error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
-            profileId,
-            updates
-        )
+  if (existingLink) {
+    return { error: 'Bu kullanıcı zaten bu restoranın yöneticisi.' }
+  }
 
-        if (updateError) {
-            return { error: updateError.message }
-        }
+  const { error: linkError } = await supabaseAdmin
+    .from('restaurant_admins')
+    .insert({
+        restaurant_id: restaurantId,
+        profile_id: userId,
+        permissions: ['all']
+    })
 
-        // Update profile email if changed
-        if (email) {
-            await supabase.from('profiles').update({ email }).eq('id', profileId)
-        }
-    }
+  if (linkError) throw new Error(`Bağlantı oluşturulamadı: ${linkError.message}`)
 
+  revalidatePath(`/admin/restaurants/${restaurantId}/edit`)
+  return { success: true }
+}
+
+export async function removeRestaurantAdmin(restaurantId: string, profileId: string) {
+    const { error } = await supabaseAdmin
+        .from('restaurant_admins')
+        .delete()
+        .eq('restaurant_id', restaurantId)
+        .eq('profile_id', profileId)
+
+    if (error) throw new Error(error.message)
+
+    revalidatePath(`/admin/restaurants/${restaurantId}/edit`)
     return { success: true }
 }
 
