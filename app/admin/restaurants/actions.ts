@@ -135,6 +135,24 @@ export async function createRestaurantWithAdmin(data: any) {
        throw new Error(`Yönetici yetkisi verilemedi: ${linkError.message}`)
     }
 
+    // 4.5 Add Additional Admins if provided
+    if (data.admins && Array.isArray(data.admins) && data.admins.length > 0) {
+      for (const admin of data.admins) {
+        // Using addRestaurantAdmin here might be tricky due to circular deps or context
+        // Let's replicate simple logic or call it if possible.
+        // Since addRestaurantAdmin is exported in same file, we can call it directly?
+        // Yes, but 'this' context might be weird. It's safer to replicate simple logic or move logic to helper.
+        // Let's just use the same robust logic as addRestaurantAdmin but inline or helper.
+        // ACTUALLY, we can just call addRestaurantAdmin! It is an async function in the same module.
+        try {
+           await addRestaurantAdmin(restaurant.id, admin.email, admin.name)
+        } catch (err) {
+           console.error(`Failed to add additional admin ${admin.email}:`, err)
+           // Don't fail the whole creation for this
+        }
+      }
+    }
+
     // 5. Create AI Config
     await supabase.from('ai_configs').insert({
       restaurant_id: restaurant.id,
@@ -377,4 +395,24 @@ export async function createQRCode(restaurantId: string, formData: FormData) {
 
   revalidatePath(`/admin/restaurants/${restaurantId}/qr`)
   return { success: true }
+}
+
+export async function checkRestaurantSlug(slug: string, excludeId?: string) {
+    // Use supabaseAdmin to bypass RLS for global checking
+    let query = supabaseAdmin
+        .from('restaurants')
+        .select('id')
+        .eq('slug', slug)
+
+    if (excludeId) {
+        query = query.neq('id', excludeId)
+    }
+
+    const { data, error } = await query.maybeSingle()
+
+    if (error) {
+        return { error: error.message }
+    }
+
+    return { isAvailable: !data }
 }

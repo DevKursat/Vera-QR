@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/components/ui/use-toast'
-import { Loader2, Upload, X, Lock, Mail } from 'lucide-react'
+import { Loader2, Upload, X, Lock, Mail, Plus, Trash2 } from 'lucide-react'
 import { slugify } from '@/lib/utils'
 import GooglePlacesAutocomplete from './google-places-autocomplete'
 import SlugInput from '@/components/admin/slug-input'
@@ -56,10 +56,16 @@ export default function NewRestaurantForm() {
     openai_api_key: '',
     categories: ['Yemek', 'İçecek', 'Tatlı'],
 
-    // Admin User
+    // Admin User (Primary)
     admin_email: '',
     admin_password: '',
+
+    // Additional Admins
+    admins: [] as { name: string; email: string }[]
   })
+
+  // New Admin State
+  const [newAdmin, setNewAdmin] = useState({ name: '', email: '' })
 
   const handleNameChange = (name: string) => {
     setFormData({
@@ -102,6 +108,25 @@ export default function NewRestaurantForm() {
       .getPublicUrl(filePath)
 
     return publicUrl
+  }
+
+  const handleAddAdmin = () => {
+    if (newAdmin.email && newAdmin.name) {
+      setFormData({
+        ...formData,
+        admins: [...formData.admins, newAdmin]
+      })
+      setNewAdmin({ name: '', email: '' })
+    }
+  }
+
+  const handleRemoveAdmin = (index: number) => {
+    const newAdmins = [...formData.admins]
+    newAdmins.splice(index, 1)
+    setFormData({
+      ...formData,
+      admins: newAdmins
+    })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -207,45 +232,99 @@ export default function NewRestaurantForm() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
             <Lock className="h-5 w-5" />
-            Yönetici Hesabı
+            Yönetici Hesapları
           </CardTitle>
           <CardDescription>
-            Restoran yöneticisi için giriş bilgilerini belirleyin
+            Restoran yöneticilerini ve personeli belirleyin
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="admin_email">E-posta Adresi *</Label>
-            <div className="relative">
-                <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                <Input
-                id="admin_email"
-                type="email"
-                className="pl-10"
-                value={formData.admin_email}
-                onChange={(e) => setFormData({ ...formData, admin_email: e.target.value })}
-                placeholder="yonetici@restoran.com"
-                required
-                disabled={isLoading}
-                />
+        <CardContent className="space-y-6">
+          {/* Primary Admin */}
+          <div className="space-y-4 p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg border border-blue-100 dark:border-blue-800">
+            <h3 className="font-semibold text-sm text-blue-900 dark:text-blue-100 mb-2">Ana Yönetici</h3>
+            <div className="space-y-2">
+                <Label htmlFor="admin_email">E-posta Adresi *</Label>
+                <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                    <Input
+                    id="admin_email"
+                    type="email"
+                    className="pl-10"
+                    value={formData.admin_email}
+                    onChange={(e) => setFormData({ ...formData, admin_email: e.target.value })}
+                    placeholder="yonetici@restoran.com"
+                    required
+                    disabled={isLoading}
+                    />
+                </div>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="admin_password">Şifre *</Label>
+                <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                    <Input
+                    id="admin_password"
+                    type="password"
+                    className="pl-10"
+                    value={formData.admin_password}
+                    onChange={(e) => setFormData({ ...formData, admin_password: e.target.value })}
+                    placeholder="Güçlü bir şifre belirleyin"
+                    minLength={6}
+                    required
+                    disabled={isLoading}
+                    />
+                </div>
             </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="admin_password">Şifre *</Label>
-            <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                <Input
-                id="admin_password"
-                type="password"
-                className="pl-10"
-                value={formData.admin_password}
-                onChange={(e) => setFormData({ ...formData, admin_password: e.target.value })}
-                placeholder="Güçlü bir şifre belirleyin"
-                minLength={6}
-                required
-                disabled={isLoading}
-                />
+
+          {/* Additional Admins */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-sm">Diğer Yöneticiler (Opsiyonel)</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div className="space-y-2">
+                    <Label>Ad Soyad</Label>
+                    <Input
+                        placeholder="Ahmet Yılmaz"
+                        value={newAdmin.name}
+                        onChange={(e) => setNewAdmin({...newAdmin, name: e.target.value})}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label>Email</Label>
+                    <Input
+                        placeholder="ahmet@restoran.com"
+                        type="email"
+                        value={newAdmin.email}
+                        onChange={(e) => setNewAdmin({...newAdmin, email: e.target.value})}
+                    />
+                </div>
+                <Button type="button" onClick={handleAddAdmin} variant="secondary">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ekle
+                </Button>
             </div>
+
+            {/* List */}
+            {formData.admins.length > 0 && (
+                <div className="border rounded-md divide-y">
+                    {formData.admins.map((admin, i) => (
+                        <div key={i} className="p-3 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
+                            <div className="flex items-center gap-3">
+                                <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-700 dark:text-blue-300 font-bold text-xs">
+                                    {admin.name.charAt(0)}
+                                </div>
+                                <div>
+                                    <p className="text-sm font-medium">{admin.name}</p>
+                                    <p className="text-xs text-slate-500">{admin.email}</p>
+                                </div>
+                            </div>
+                            <Button size="icon" variant="ghost" className="text-red-500" onClick={() => handleRemoveAdmin(i)}>
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    ))}
+                </div>
+            )}
           </div>
         </CardContent>
       </Card>

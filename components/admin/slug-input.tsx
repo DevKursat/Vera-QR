@@ -5,8 +5,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Loader2, Check, X, Search } from 'lucide-react'
-import { supabase } from '@/lib/supabase/client'
 import { slugify } from '@/lib/utils'
+import { checkRestaurantSlug } from '@/app/admin/restaurants/actions'
 
 interface SlugInputProps {
   value: string
@@ -38,31 +38,20 @@ export default function SlugInput({ value, onChange, currentId, label = "URL Slu
 
     setIsLoading(true)
     try {
-      let query = supabase
-        .from('restaurants')
-        .select('id')
-        .eq('slug', inputValue)
+      const result = await checkRestaurantSlug(inputValue, currentId)
 
-      if (currentId) {
-        query = query.neq('id', currentId)
-      }
-
-      const { data, error } = await query.maybeSingle()
-
-      if (error) {
-        console.error('Slug check error:', error)
+      if (result.error) {
+        console.error('Slug check error:', result.error)
         setIsValid(false)
         setErrorMessage('Kontrol edilirken hata oluştu')
-        // Parent needs to know validation failed
         onChange(inputValue, false)
-      } else if (data) {
+      } else if (!result.isAvailable) {
         setIsValid(false)
         setErrorMessage('Bu slug kullanımda')
         onChange(inputValue, false)
       } else {
         setIsValid(true)
         setErrorMessage('')
-        // Parent needs to know validation passed
         onChange(inputValue, true)
       }
     } catch (err) {
