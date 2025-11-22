@@ -18,7 +18,7 @@ export default async function AnalyticsPage() {
         </p>
       </div>
 
-      <AnalyticsDashboard organizationId={adminInfo.organization_id} />
+      <AnalyticsDashboard restaurantId={adminInfo.restaurant_id} />
     </div>
   )
 }

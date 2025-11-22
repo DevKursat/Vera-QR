@@ -17,7 +17,7 @@ export default async function CustomersPage() {
         descriptionKey="pages.customers.description"
       />
 
-      <CustomersList organizationId={adminInfo.organization_id} />
+      <CustomersList restaurantId={adminInfo.restaurant_id} />
     </div>
   )
 }

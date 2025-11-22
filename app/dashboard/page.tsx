@@ -48,11 +48,11 @@ export default async function RestaurantDashboard() {
 
   } catch (error) {
     console.error('Error fetching restaurant dashboard stats:', error)
-    // Fallback for verification without DB
-    todayOrders = 24
-    todayRevenueValue = 5480.50
-    pendingOrders = 3
-    restaurantName = 'Bella Italia Ristorante'
+    // Fallback to zero on error to avoid misleading data
+    todayOrders = 0
+    todayRevenueValue = 0
+    pendingOrders = 0
+    // Keep restaurantName from adminInfo if we got it before the error
   }
 
   return (

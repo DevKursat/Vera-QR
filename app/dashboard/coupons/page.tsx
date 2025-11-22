@@ -17,7 +17,7 @@ export default async function CouponsPage() {
         descriptionKey="pages.coupons.description"
       />
 
-      <CouponManagement organizationId={adminInfo.organization_id} />
+      <CouponManagement restaurantId={adminInfo.restaurant_id} />
     </div>
   )
 }

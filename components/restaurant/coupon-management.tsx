@@ -29,10 +29,10 @@ interface Coupon {
 }
 
 interface Props {
-  organizationId: string
+  restaurantId: string
 }
 
-export default function CouponManagement({ organizationId }: Props) {
+export default function CouponManagement({ restaurantId }: Props) {
   const [coupons, setCoupons] = useState<Coupon[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [showCreateForm, setShowCreateForm] = useState(false)
@@ -53,7 +53,7 @@ export default function CouponManagement({ organizationId }: Props) {
       const { data, error } = await supabase
         .from('coupons')
         .select('*')
-        .eq('organization_id', organizationId)
+        .eq('restaurant_id', restaurantId)
         .order('created_at', { ascending: false })
 
       if (error) throw error
@@ -68,11 +68,11 @@ export default function CouponManagement({ organizationId }: Props) {
     } finally {
       setIsLoading(false)
     }
-  }, [organizationId, toast])
+  }, [restaurantId, toast])
 
   useEffect(() => {
     fetchCoupons()
-  }, [organizationId, fetchCoupons])
+  }, [restaurantId, fetchCoupons])
 
   const generateCouponCode = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -97,7 +97,7 @@ export default function CouponManagement({ organizationId }: Props) {
 
     try {
       const { error } = await (supabase.from('coupons') as any).insert({
-        organization_id: organizationId,
+        restaurant_id: restaurantId,
         code: formData.code.toUpperCase(),
         description: formData.description,
         discount_type: formData.discount_type,

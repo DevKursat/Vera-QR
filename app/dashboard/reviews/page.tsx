@@ -17,7 +17,7 @@ export default async function ReviewsPage() {
         descriptionKey="pages.reviews.description"
       />
 
-      <ReviewsManagement organizationId={adminInfo.organization_id} />
+      <ReviewsManagement restaurantId={adminInfo.restaurant_id} />
     </div>
   )
 }
