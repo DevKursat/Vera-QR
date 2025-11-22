@@ -295,18 +295,19 @@ export async function addRestaurantAdmin(restaurantId: string, email: string, na
             email_confirm: true,
             user_metadata: { full_name: name }
         })
-        if (createError || !newUser.user) throw new Error(`Kullanıcı oluşturulamadı: ${createError?.message}`)
+        if (createError || !newUser.user) return { error: `Kullanıcı oluşturulamadı: ${createError?.message}` }
         userId = newUser.user.id
     }
 
     // Ensure Profile
-    await supabaseAdmin.from('profiles').upsert({
+    const { error: profileError } = await supabaseAdmin.from('profiles').upsert({
         id: userId,
         email,
         full_name: name,
         role: 'restaurant_admin',
         is_active: true
     })
+    if (profileError) return { error: `Profil güncellenemedi: ${profileError.message}` }
   }
 
   // 2. Link to Restaurant
@@ -330,7 +331,7 @@ export async function addRestaurantAdmin(restaurantId: string, email: string, na
         permissions: ['all']
     })
 
-  if (linkError) throw new Error(`Bağlantı oluşturulamadı: ${linkError.message}`)
+  if (linkError) return { error: `Bağlantı oluşturulamadı: ${linkError.message}` }
 
   revalidatePath(`/admin/restaurants/${restaurantId}/edit`)
   return { success: true }
@@ -343,7 +344,9 @@ export async function removeRestaurantAdmin(restaurantId: string, profileId: str
         .eq('restaurant_id', restaurantId)
         .eq('profile_id', profileId)
 
-    if (error) throw new Error(error.message)
+    if (error) {
+        return { error: error.message }
+    }
 
     revalidatePath(`/admin/restaurants/${restaurantId}/edit`)
     return { success: true }
