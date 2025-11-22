@@ -13,9 +13,27 @@ import { Loader2, Save, AlertCircle, Lock, Mail } from 'lucide-react'
 import { slugify } from '@/lib/utils'
 import GooglePlacesAutocomplete from '@/components/admin/google-places-autocomplete'
 import SlugInput from '@/components/admin/slug-input'
-import { updateRestaurant, updateRestaurantAdmin } from '@/app/admin/restaurants/actions'
+import { updateRestaurant, getRestaurantAdmins, addRestaurantAdmin, removeRestaurantAdmin } from '@/app/admin/restaurants/actions'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { Plus, Trash2, Users } from 'lucide-react'
 
 const BRAND_COLORS = [
   '#000000', '#EF4444', '#F59E0B', '#10B981', '#3B82F6',
@@ -36,7 +54,11 @@ export default function EditRestaurantForm({ restaurant }: { restaurant: any }) 
   const [isLoading, setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState('info')
   const [aiConfig, setAiConfig] = useState<any>(null)
-  const [adminInfo, setAdminInfo] = useState<any>(null)
+
+  // Admin Management State
+  const [admins, setAdmins] = useState<any[]>([])
+  const [isAddAdminOpen, setIsAddAdminOpen] = useState(false)
+  const [newAdmin, setNewAdmin] = useState({ name: '', email: '', password: '' })
 
   // Form States
   const [formData, setFormData] = useState({
@@ -49,13 +71,9 @@ export default function EditRestaurantForm({ restaurant }: { restaurant: any }) 
     subscription_tier: restaurant.subscription_tier || 'starter',
     working_hours: restaurant.working_hours || {},
     ai_personality: 'professional',
-
-    // Admin Account Updates
-    admin_email: '',
-    admin_password: '',
   })
 
-  // Fetch AI Config and Admin Info on mount
+  // Fetch Data on mount
   useEffect(() => {
     const fetchData = async () => {
       // Fetch AI Config
@@ -70,26 +88,20 @@ export default function EditRestaurantForm({ restaurant }: { restaurant: any }) 
         setFormData(prev => ({ ...prev, ai_personality: ai.personality }))
       }
 
-      // Fetch Admin Info (Email)
-      // We get this via restaurant_admins -> profiles
-      const { data: adminData } = await supabase
-        .from('restaurant_admins')
-        .select('profiles(email)')
-        .eq('restaurant_id', restaurant.id)
-        .maybeSingle()
-
-      if (adminData?.profiles) {
-        setAdminInfo(adminData.profiles)
-        setFormData(prev => ({ ...prev, admin_email: (adminData.profiles as any).email }))
-      } else {
-        // Fallback: If no link exists, we can't show the email automatically.
-        // We might want to clear it or show a placeholder?
-        // For now, let's just leave it empty so the admin can type it in to fix the link.
-        console.warn('No admin linked to this restaurant yet.')
-      }
+      // Fetch Admins List
+      fetchAdmins()
     }
     fetchData()
   }, [restaurant.id])
+
+  const fetchAdmins = async () => {
+    try {
+      const data = await getRestaurantAdmins(restaurant.id)
+      setAdmins(data)
+    } catch (error) {
+      console.error('Failed to fetch admins:', error)
+    }
+  }
 
 
   const handleUpdateInfo = async () => {
@@ -124,33 +136,44 @@ export default function EditRestaurantForm({ restaurant }: { restaurant: any }) 
     }
   }
 
-  const handleUpdateAdmin = async () => {
+  const handleAddAdmin = async () => {
+    if (!newAdmin.email || !newAdmin.name) {
+        toast({ variant: 'destructive', title: 'Hata', description: 'Email ve isim zorunludur.' })
+        return
+    }
+
     setIsLoading(true)
     try {
-      console.log('Sending admin update:', { email: formData.admin_email }) // Debug log
-
-      const result = await updateRestaurantAdmin(
+      const result = await addRestaurantAdmin(
         restaurant.id,
-        formData.admin_email?.trim(), // Ensure no whitespace
-        formData.admin_password || undefined
+        newAdmin.email.trim(),
+        newAdmin.name.trim(),
+        newAdmin.password || undefined
       )
 
       if (result.error) throw new Error(result.error)
 
-      toast({
-        title: 'Başarılı',
-        description: 'Yönetici hesap bilgileri güncellendi.',
-      })
-      // Clear password field after success
-      setFormData(prev => ({ ...prev, admin_password: '' }))
+      toast({ title: 'Başarılı', description: 'Yönetici eklendi.' })
+      setIsAddAdminOpen(false)
+      setNewAdmin({ name: '', email: '', password: '' })
+      fetchAdmins()
     } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Hata',
-        description: error.message,
-      })
+      toast({ variant: 'destructive', title: 'Hata', description: error.message })
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleRemoveAdmin = async (profileId: string) => {
+    if (!confirm('Bu yöneticiyi kaldırmak istediğinize emin misiniz?')) return
+
+    try {
+        const result = await removeRestaurantAdmin(restaurant.id, profileId)
+        if (result.error) throw new Error(result.error)
+        toast({ title: 'Başarılı', description: 'Yönetici kaldırıldı.' })
+        fetchAdmins()
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Hata', description: error.message })
     }
   }
 
@@ -308,64 +331,108 @@ export default function EditRestaurantForm({ restaurant }: { restaurant: any }) 
         </Card>
       </TabsContent>
 
-      {/* ADMIN ACCOUNT TAB */}
+      {/* ADMIN MANAGEMENT TAB */}
       <TabsContent value="admin" className="space-y-4">
-        <Card className="border-red-200 dark:border-red-900/50">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
-                    <Lock className="h-5 w-5" />
-                    Yönetici Hesap Erişimi
-                </CardTitle>
-                <CardDescription>
-                    Restoran yöneticisinin giriş bilgilerini buradan değiştirebilirsiniz.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="space-y-2">
-                    <Label>Yönetici Email</Label>
-                    {!adminInfo && (
-                        <div className="mb-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-md flex items-start gap-2">
-                            <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500 mt-0.5" />
-                            <div className="text-sm text-yellow-800 dark:text-yellow-200">
-                                <p className="font-semibold">Yönetici Bağlantısı Eksik</p>
-                                <p>Bu restorana bağlı bir yönetici hesabı bulunamadı. Lütfen yöneticinin email adresini girin ve &quot;Güncelle&quot; butonuna basarak bağlantıyı otomatik onarın.</p>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                    <CardTitle className="flex items-center gap-2">
+                        <Users className="h-5 w-5" />
+                        Ekip Yönetimi
+                    </CardTitle>
+                    <CardDescription>
+                        Bu restorana erişimi olan yöneticileri düzenleyin.
+                    </CardDescription>
+                </div>
+                <Dialog open={isAddAdminOpen} onOpenChange={setIsAddAdminOpen}>
+                    <DialogTrigger asChild>
+                        <Button size="sm" className="gap-2">
+                            <Plus className="h-4 w-4" />
+                            Yönetici Ekle
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Yeni Yönetici Ekle</DialogTitle>
+                            <DialogDescription>
+                                Mevcut bir kullanıcıyı veya yeni bir hesabı ekleyin.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label>Ad Soyad</Label>
+                                <Input
+                                    value={newAdmin.name}
+                                    onChange={(e) => setNewAdmin({...newAdmin, name: e.target.value})}
+                                    placeholder="Ad Soyad"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Email</Label>
+                                <Input
+                                    value={newAdmin.email}
+                                    onChange={(e) => setNewAdmin({...newAdmin, email: e.target.value})}
+                                    placeholder="ornek@email.com"
+                                    type="email"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Şifre (Opsiyonel)</Label>
+                                <Input
+                                    value={newAdmin.password}
+                                    onChange={(e) => setNewAdmin({...newAdmin, password: e.target.value})}
+                                    placeholder="Sadece yeni hesap oluştururken gereklidir"
+                                    type="password"
+                                />
                             </div>
                         </div>
-                    )}
-                    <div className="relative">
-                        <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                        <Input
-                            className="pl-10"
-                            value={formData.admin_email}
-                            onChange={(e) => setFormData({...formData, admin_email: e.target.value})}
-                            placeholder="admin@ornek.com"
-                        />
-                    </div>
-                </div>
-
-                <div className="space-y-2">
-                    <Label>Yeni Şifre</Label>
-                    <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-                        <Input
-                            type="password"
-                            className="pl-10"
-                            placeholder="Değiştirmek için yeni şifre girin (en az 6 karakter)"
-                            value={formData.admin_password}
-                            onChange={(e) => setFormData({...formData, admin_password: e.target.value})}
-                        />
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                        Şifreyi değiştirmek istemiyorsanız boş bırakın.
-                    </p>
-                </div>
-
-                <div className="flex justify-end pt-4">
-                    <Button variant="destructive" onClick={handleUpdateAdmin} disabled={isLoading}>
-                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Hesap Bilgilerini Güncelle
-                    </Button>
-                </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsAddAdminOpen(false)}>İptal</Button>
+                            <Button onClick={handleAddAdmin} disabled={isLoading}>
+                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Ekle'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Ad Soyad</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Rol</TableHead>
+                            <TableHead className="text-right">İşlem</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {admins.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                                    Henüz yönetici eklenmemiş.
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            admins.map((admin) => (
+                                <TableRow key={admin.link_id}>
+                                    <TableCell className="font-medium">{admin.profile?.full_name || 'İsimsiz'}</TableCell>
+                                    <TableCell>{admin.profile?.email}</TableCell>
+                                    <TableCell className="capitalize">{admin.profile?.role?.replace('_', ' ')}</TableCell>
+                                    <TableCell className="text-right">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                            onClick={() => handleRemoveAdmin(admin.profile?.id)}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
             </CardContent>
         </Card>
       </TabsContent>
